@@ -6,6 +6,6 @@ reviews.csv
 logs
 .env
 data/*
-
+!data/data.txt
 .venv
 __pycache__
