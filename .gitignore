@@ -1,0 +1,11 @@
+*.csv
+reviews.csv
+*.sqlite
+reviews.csv
+
+logs
+.env
+data/*
+
+.venv
+__pycache__

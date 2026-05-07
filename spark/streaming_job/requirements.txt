@@ -1,0 +1,6 @@
+pymongo
+dotenv
+kafka-python
+nltk
+numpy
+pandas

@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amazon Reviews — Sentiment Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <style>
+    /* ── Design Tokens ─────────────────────────────────── */
+    :root,
+    [data-theme="light"] {
+      --color-bg: #f7f6f2;
+      --color-surface: #f9f8f5;
+      --color-surface-2: #fbfbf9;
+      --color-surface-offset: #f0ede8;
+      --color-divider: #dcd9d5;
+      --color-border: rgba(40, 37, 29, 0.10);
+      --color-text: #28251d;
+      --color-text-muted: #7a7974;
+      --color-text-faint: #bab9b4;
+      --color-primary: #01696f;
+      --color-primary-hover: #0c4e54;
+      --color-primary-hl: #cedcd8;
+      --color-positive: #437a22;
+      --color-positive-bg: #d4dfcc;
+      --color-neutral-s: #d19900;
+      --color-neutral-bg: #e9e0c6;
+      --color-negative: #a13544;
+      --color-negative-bg: #dececb;
+      --shadow-sm: 0 1px 2px oklch(0.2 0.01 80 / 0.06);
+      --shadow-md: 0 4px 12px oklch(0.2 0.01 80 / 0.09);
+      --shadow-lg: 0 12px 32px oklch(0.2 0.01 80 / 0.12);
+      --radius-sm: 0.375rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      --radius-full: 9999px;
+      --space-1: .25rem;
+      --space-2: .5rem;
+      --space-3: .75rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      --space-10: 2.5rem;
+      --space-12: 3rem;
+      --space-16: 4rem;
+      --text-xs: clamp(.75rem, .7rem + .25vw, .875rem);
+      --text-sm: clamp(.875rem, .8rem + .35vw, 1rem);
+      --text-base: clamp(1rem, .95rem + .25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + .75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+      --sidebar-w: 220px;
+    }
+
+    [data-theme="dark"] {
+      --color-bg: #0f0e0d;
+      --color-surface: #161513;
+      --color-surface-2: #1c1b19;
+      --color-surface-offset: #222120;
+      --color-divider: #2a2926;
+      --color-border: rgba(205, 204, 202, 0.08);
+      --color-text: #cdccca;
+      --color-text-muted: #797876;
+      --color-text-faint: #4a4947;
+      --color-primary: #4f98a3;
+      --color-primary-hover: #227f8b;
+      --color-primary-hl: #1e3b3e;
+      --color-positive: #6daa45;
+      --color-positive-bg: #1e3019;
+      --color-neutral-s: #e8af34;
+      --color-neutral-bg: #2e2610;
+      --color-negative: #dd6974;
+      --color-negative-bg: #2e1519;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, .35);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, .45);
+      --shadow-lg: 0 12px 40px rgba(0, 0, 0, .55);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        --color-bg: #0f0e0d;
+        --color-surface: #161513;
+        --color-surface-2: #1c1b19;
+        --color-surface-offset: #222120;
+        --color-divider: #2a2926;
+        --color-border: rgba(205, 204, 202, 0.08);
+        --color-text: #cdccca;
+        --color-text-muted: #797876;
+        --color-text-faint: #4a4947;
+        --color-primary: #4f98a3;
+        --color-primary-hover: #227f8b;
+        --color-primary-hl: #1e3b3e;
+        --color-positive: #6daa45;
+        --color-positive-bg: #1e3019;
+        --color-neutral-s: #e8af34;
+        --color-neutral-bg: #2e2610;
+        --color-negative: #dd6974;
+        --color-negative-bg: #2e1519;
+      }
+    }
+
+    /* ── Reset ─────────────────────────────────────────── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html {
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      scroll-behavior: smooth
+    }
+
+    body {
+      min-height: 100dvh;
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      color: var(--color-text);
+      background: var(--color-bg);
+      line-height: 1.6;
+      display: flex
+    }
+
+    img,
+    svg {
+      display: block;
+      max-width: 100%
+    }
+
+    button {
+      cursor: pointer;
+      background: none;
+      border: none;
+      font: inherit;
+      color: inherit
+    }
+
+    a,
+    button,
+    [role="button"] {
+      transition: color var(--transition), background var(--transition),
+        border-color var(--transition), box-shadow var(--transition), opacity var(--transition)
+    }
+
+    /* ── Layout ────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-height: 100dvh;
+      flex-shrink: 0;
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100dvh;
+      overflow-y: auto;
+    }
+
+    .main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column
+    }
+
+    .topbar {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .content {
+      padding: var(--space-8) var(--space-6);
+      flex: 1
+    }
+
+    /* ── Sidebar ───────────────────────────────────────── */
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-5) var(--space-5);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .logo-mark {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0
+    }
+
+    .logo-name {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      letter-spacing: -.01em;
+      line-height: 1.2
+    }
+
+    .logo-sub {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted)
+    }
+
+    .nav-section {
+      padding: var(--space-4) var(--space-3) var(--space-2)
+    }
+
+    .nav-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--color-text-faint);
+      padding: 0 var(--space-2);
+      margin-bottom: var(--space-1)
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .nav-item:hover {
+      background: var(--color-surface-offset);
+      color: var(--color-text)
+    }
+
+    .nav-item.active {
+      background: var(--color-primary-hl);
+      color: var(--color-primary);
+      font-weight: 500
+    }
+
+    .nav-item svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: var(--space-4);
+      border-top: 1px solid var(--color-border)
+    }
+
+    .db-indicator {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-xs);
+      color: var(--color-text-muted)
+    }
+
+    .db-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #6daa45;
+      flex-shrink: 0
+    }
+
+    .db-dot.offline {
+      background: #dd6974
+    }
+
+    /* ── Topbar ────────────────────────────────────────── */
+    .topbar-title {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--color-text)
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3)
+    }
+
+    .product-badge {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: var(--color-surface-offset);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      padding: var(--space-1) var(--space-3);
+      font-size: var(--text-xs);
+      font-family: var(--font-mono);
+      font-weight: 500;
+      color: var(--color-primary);
+    }
+
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: var(--color-primary);
+      color: white;
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--text-sm);
+      font-weight: 500;
+    }
+
+    .refresh-btn:hover {
+      background: var(--color-primary-hover)
+    }
+
+    .theme-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-muted);
+    }
+
+    .theme-btn:hover {
+      background: var(--color-surface-offset);
+      color: var(--color-text)
+    }
+
+    .last-refresh {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint)
+    }
+
+    /* ── Section heading ───────────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-5)
+    }
+
+    .section-title {
+      font-size: var(--text-base);
+      font-weight: 600;
+      letter-spacing: -.01em
+    }
+
+    .section-sub {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      margin-top: 2px
+    }
+
+    /* ── Product controls ─────────────────────────────── */
+    .product-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap
+    }
+
+    .product-label {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted)
+    }
+
+    .product-input {
+      background: var(--color-surface-offset);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      border-radius: var(--radius-md);
+      padding: 6px 10px;
+      min-width: 180px;
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+    }
+
+    .product-btn {
+      background: var(--color-primary);
+      color: white;
+      border-radius: var(--radius-md);
+      padding: 6px 10px;
+      font-size: var(--text-xs);
+      font-weight: 600;
+    }
+
+    .product-btn:hover {
+      background: var(--color-primary-hover)
+    }
+
+    .product-status {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted)
+    }
+
+    .product-status.error {
+      color: var(--color-negative)
+    }
+
+    /* ── KPI cards ─────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-4);
+      margin-bottom: var(--space-8)
+    }
+
+    .kpi-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-label {
+      font-size: var(--text-xs);
+      font-weight: 500;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-2)
+    }
+
+    .kpi-value {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      letter-spacing: -.03em;
+      font-variant-numeric: tabular-nums lining-nums;
+      line-height: 1
+    }
+
+    .kpi-sub {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      margin-top: var(--space-1)
+    }
+
+    .kpi-card.positive .kpi-value {
+      color: var(--color-positive)
+    }
+
+    .kpi-card.neutral .kpi-value {
+      color: var(--color-neutral-s)
+    }
+
+    .kpi-card.negative .kpi-value {
+      color: var(--color-negative)
+    }
+
+    /* ── Charts grid ───────────────────────────────────── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--space-6);
+      margin-bottom: var(--space-8)
+    }
+
+    .chart-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 280px
+    }
+
+    /* ── Top products bar ──────────────────────────────── */
+    .chart-card.full {
+      margin-bottom: var(--space-8)
+    }
+
+    /* ── Recent predictions table ──────────────────────── */
+    .table-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-5) var(--space-6);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    thead th {
+      padding: var(--space-3) var(--space-4);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      text-align: left;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface-offset);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--color-divider)
+    }
+
+    tbody tr:last-child {
+      border-bottom: none
+    }
+
+    tbody tr:hover {
+      background: var(--color-surface-offset)
+    }
+
+    tbody td {
+      padding: var(--space-3) var(--space-4);
+      font-size: var(--text-xs);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sentiment-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    .badge-positive {
+      background: var(--color-positive-bg);
+      color: var(--color-positive)
+    }
+
+    .badge-neutral {
+      background: var(--color-neutral-bg);
+      color: var(--color-neutral-s)
+    }
+
+    .badge-negative {
+      background: var(--color-negative-bg);
+      color: var(--color-negative)
+    }
+
+    /* ── Skeleton ──────────────────────────────────────── */
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0
+      }
+
+      100% {
+        background-position: 200% 0
+      }
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--color-surface-offset) 25%,
+          var(--color-surface-2) 50%, var(--color-surface-offset) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ── Page sections ─────────────────────────────────── */
+    .page-section {
+      display: none
+    }
+
+    .page-section.active {
+      display: block
+    }
+
+    /* ── Responsive ────────────────────────────────────── */
+    @media(max-width:1024px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .charts-row {
+        grid-template-columns: 1fr
+      }
+    }
+
+    @media(max-width:768px) {
+      .sidebar {
+        display: none
+      }
+
+      .kpi-grid {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .content {
+        padding: var(--space-4)
+      }
+    }
+
+    @media(max-width:480px) {
+      .kpi-grid {
+        grid-template-columns: 1fr
+      }
+
+      .charts-row {
+        grid-template-columns: 1fr
+      }
+    }
+
+    /* ── Misc ──────────────────────────────────────────── */
+    .mono {
+      font-family: var(--font-mono);
+      font-size: .85em
+    }
+
+    .truncate {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px
+    }
+
+    .score-star {
+      color: var(--color-neutral-s)
+    }
+  </style>
+</head>
+
+<body data-default-product="{{ target_product }}">
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="sidebar-logo">
+      <svg class="logo-mark" viewBox="0 0 32 32" fill="none" aria-label="Amazon Sentiment logo">
+        <rect width="32" height="32" rx="8" fill="var(--color-primary)" opacity=".15" />
+        <path d="M8 22 C10 18, 14 10, 16 10 C18 10, 22 18, 24 22" stroke="var(--color-primary)" stroke-width="2"
+          stroke-linecap="round" fill="none" />
+        <circle cx="16" cy="10" r="2.5" fill="var(--color-positive)" />
+        <circle cx="8" cy="22" r="2" fill="var(--color-negative)" />
+        <circle cx="24" cy="22" r="2" fill="var(--color-positive)" />
+      </svg>
+      <div>
+        <div class="logo-name">SentimentView</div>
+        <div class="logo-sub">Offline Dashboard</div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Analytics</div>
+      <a class="nav-item active" onclick="showPage('overview')" role="button">
+        <i data-lucide="layout-dashboard"></i> Overview
+      </a>
+      <a class="nav-item" onclick="showPage('product')" role="button">
+        <i data-lucide="package"></i> Product Scoring
+      </a>
+      <a class="nav-item" onclick="showPage('feed')" role="button">
+        <i data-lucide="list"></i> Recent Predictions
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="db-indicator">
+        <span class="db-dot" id="db-dot"></span>
+        <span id="db-status">Connecting…</span>
+      </div>
+      <div style="margin-top:var(--space-2);font-size:var(--text-xs);color:var(--color-text-faint)">
+        MongoDB · predictions
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ────────────────────────────────────────────────── -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <span class="topbar-title" id="page-title">Overview</span>
+      <div class="topbar-right">
+        <span class="last-refresh" id="last-refresh">—</span>
+        <div class="product-badge">
+          <i data-lucide="tag" style="width:12px;height:12px"></i>
+          <span id="active-product-badge">{{ target_product }}</span>
+        </div>
+        <button class="refresh-btn" onclick="loadAll()" aria-label="Refresh data">
+          <i data-lucide="refresh-cw" style="width:14px;height:14px"></i> Refresh
+        </button>
+        <button class="theme-btn" data-theme-toggle aria-label="Toggle theme">
+          <i data-lucide="moon" style="width:16px;height:16px"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="content" id="main-content">
+
+      <!-- ── Page: Overview ──────────────────────────────── -->
+      <section class="page-section active" id="page-overview">
+
+        <!-- KPIs -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Total Predictions</div>
+            <div class="kpi-value" id="kpi-total">—</div>
+            <div class="kpi-sub">reviews processed</div>
+          </div>
+          <div class="kpi-card positive">
+            <div class="kpi-label">Positive</div>
+            <div class="kpi-value" id="kpi-positive">—</div>
+            <div class="kpi-sub" id="kpi-positive-pct">—</div>
+          </div>
+          <div class="kpi-card neutral">
+            <div class="kpi-label">Neutral</div>
+            <div class="kpi-value" id="kpi-neutral">—</div>
+            <div class="kpi-sub" id="kpi-neutral-pct">—</div>
+          </div>
+          <div class="kpi-card negative">
+            <div class="kpi-label">Negative</div>
+            <div class="kpi-value" id="kpi-negative">—</div>
+            <div class="kpi-sub" id="kpi-negative-pct">—</div>
+          </div>
+        </div>
+
+        <!-- Bar chart + Pie chart -->
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="section-header">
+              <div>
+                <div class="section-title">Predictions by Date</div>
+                <div class="section-sub">Stacked by sentiment — monthly</div>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="section-header">
+              <div>
+                <div class="section-title">Overall Distribution</div>
+                <div class="section-sub">All predictions</div>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Top products -->
+        <div class="chart-card full">
+          <div class="section-header">
+            <div>
+              <div class="section-title">Top Products by Volume</div>
+              <div class="section-sub">By number of reviews processed</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:200px"><canvas id="productsChart"></canvas></div>
+        </div>
+
+      </section>
+
+      <!-- ── Page: Product Scoring ───────────────────────── -->
+      <section class="page-section" id="page-product">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Product Scoring</div>
+            <div class="section-sub">Sentiment breakdown for <span class="mono" id="product-label">{{ target_product
+                }}</span></div>
+          </div>
+          <div>
+            <form class="product-controls" id="product-form">
+              <label class="product-label" for="product-id-input">Product ID</label>
+              <input class="product-input" id="product-id-input" type="text" spellcheck="false" placeholder="B001E4KFG0"
+                value="{{ target_product }}">
+              <button class="product-btn" type="submit">Load</button>
+              <span class="product-status" id="product-status"></span>
+            </form>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6)">
+          <div class="chart-card">
+            <div class="section-header">
+              <div>
+                <div class="section-title">Sentiment Pie</div>
+                <div class="section-sub">ProductId = <span class="mono" id="product-id-caption">{{ target_product
+                    }}</span></div>
+              </div>
+            </div>
+            <div class="chart-wrap" style="height:320px"><canvas id="productPieChart"></canvas></div>
+          </div>
+          <div class="chart-card" style="display:flex;flex-direction:column;gap:var(--space-4)">
+            <div class="section-title" style="margin-bottom:var(--space-4)">Score Breakdown</div>
+            <div class="kpi-card positive" style="flex:1">
+              <div class="kpi-label">Positive</div>
+              <div class="kpi-value" id="prod-positive">—</div>
+              <div class="kpi-sub" id="prod-positive-pct">—% of reviews</div>
+            </div>
+            <div class="kpi-card neutral" style="flex:1">
+              <div class="kpi-label">Neutral</div>
+              <div class="kpi-value" id="prod-neutral">—</div>
+              <div class="kpi-sub" id="prod-neutral-pct">—% of reviews</div>
+            </div>
+            <div class="kpi-card negative" style="flex:1">
+              <div class="kpi-label">Negative</div>
+              <div class="kpi-value" id="prod-negative">—</div>
+              <div class="kpi-sub" id="prod-negative-pct">—% of reviews</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Page: Recent Predictions ───────────────────── -->
+      <section class="page-section" id="page-feed">
+        <div class="table-card">
+          <div class="table-header">
+            <div>
+              <div class="section-title">Recent Predictions</div>
+              <div class="section-sub">Latest 20 predictions from MongoDB</div>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Product</th>
+                  <th>User</th>
+                  <th>Score</th>
+                  <th>Predicted</th>
+                  <th>Summary</th>
+                  <th>Processed</th>
+                </tr>
+              </thead>
+              <tbody id="predictions-tbody">
+                <tr>
+                  <td colspan="7" style="text-align:center;padding:var(--space-10);color:var(--color-text-muted)">
+                    Loading…
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // ── Theme toggle ───────────────────────────────────────────────
+    (function () {
+      const t = document.querySelector('[data-theme-toggle]');
+      const r = document.documentElement;
+      let d = r.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+      r.setAttribute('data-theme', d);
+      function updateIcon() {
+        if (!t) return;
+        t.innerHTML = d === 'dark'
+          ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+          : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+      }
+      updateIcon();
+      t && t.addEventListener('click', () => {
+        d = d === 'dark' ? 'light' : 'dark';
+        r.setAttribute('data-theme', d);
+        updateIcon();
+        updateChartTheme();
+      });
+    })();
+
+    // ── Chart instances ────────────────────────────────────────────
+    let barChartInst, pieChartInst, productPieInst, productsChartInst;
+    const defaultProductId = (document.body.dataset.defaultProduct || 'B001E4KFG0').trim();
+    let currentProductId = defaultProductId || 'B001E4KFG0';
+
+    function chartColors() {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return {
+        grid: dark ? 'rgba(205,204,202,0.06)' : 'rgba(40,37,29,0.07)',
+        text: dark ? '#797876' : '#7a7974',
+        pos: dark ? '#6daa45' : '#437a22',
+        neu: dark ? '#e8af34' : '#d19900',
+        neg: dark ? '#dd6974' : '#a13544',
+        posA: dark ? 'rgba(109,170,69,0.85)' : 'rgba(67,122,34,0.85)',
+        neuA: dark ? 'rgba(232,175,52,0.85)' : 'rgba(209,153,0,0.85)',
+        negA: dark ? 'rgba(221,105,116,0.85)' : 'rgba(161,53,68,0.85)',
+        primary: dark ? '#4f98a3' : '#01696f',
+      };
+    }
+
+    function updateChartTheme() {
+      const c = chartColors();
+      Chart.defaults.color = c.text;
+      [barChartInst, pieChartInst, productPieInst, productsChartInst].forEach(ch => {
+        if (!ch) return;
+        if (ch.options.scales) {
+          Object.values(ch.options.scales).forEach(ax => {
+            if (ax.grid) ax.grid.color = c.grid;
+            if (ax.ticks) ax.ticks.color = c.text;
+          });
+        }
+        ch.update();
+      });
+    }
+
+    // ── Page navigation ────────────────────────────────────────────
+    function showPage(name) {
+      document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      const navMap = { overview: 0, product: 1, feed: 2 };
+      document.querySelectorAll('.nav-item')[navMap[name]].classList.add('active');
+      const titles = { overview: 'Overview', product: 'Product Scoring', feed: 'Recent Predictions' };
+      document.getElementById('page-title').textContent = titles[name];
+    }
+
+    // ── Fetch helpers ──────────────────────────────────────────────
+    async function apiFetch(url) {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+
+    function fmt(n) {
+      return typeof n === 'number' ? n.toLocaleString() : n;
+    }
+
+    // ── KPI loading ────────────────────────────────────────────────
+    async function loadStats() {
+      try {
+        const d = await apiFetch('/api/stats');
+        document.getElementById('kpi-total').textContent = fmt(d.total);
+        document.getElementById('kpi-positive').textContent = fmt(d.positive);
+        document.getElementById('kpi-neutral').textContent = fmt(d.neutral);
+        document.getElementById('kpi-negative').textContent = fmt(d.negative);
+        if (d.total > 0) {
+          document.getElementById('kpi-positive-pct').textContent = (d.positive / d.total * 100).toFixed(1) + '% of total';
+          document.getElementById('kpi-neutral-pct').textContent = (d.neutral / d.total * 100).toFixed(1) + '% of total';
+          document.getElementById('kpi-negative-pct').textContent = (d.negative / d.total * 100).toFixed(1) + '% of total';
+        }
+        setDbStatus(true);
+      } catch (e) { setDbStatus(false); }
+    }
+
+    // ── Bar chart ──────────────────────────────────────────────────
+    async function loadBarChart() {
+      const d = await apiFetch('/api/predictions-by-date');
+      const c = chartColors();
+      const ctx = document.getElementById('barChart').getContext('2d');
+      if (barChartInst) barChartInst.destroy();
+      barChartInst = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: d.labels,
+          datasets: [
+            { label: 'Negative', data: d.negative, backgroundColor: c.negA, stack: 's' },
+            { label: 'Neutral', data: d.neutral, backgroundColor: c.neuA, stack: 's' },
+            { label: 'Positive', data: d.positive, backgroundColor: c.posA, stack: 's' },
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 12, padding: 16, color: c.text } },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            x: { stacked: true, grid: { color: c.grid }, ticks: { color: c.text, maxRotation: 45 } },
+            y: { stacked: true, grid: { color: c.grid }, ticks: { color: c.text } }
+          }
+        }
+      });
+    }
+
+    // ── Overall pie chart ──────────────────────────────────────────
+    async function loadPieChart() {
+      const d = await apiFetch('/api/stats');
+      const c = chartColors();
+      const ctx = document.getElementById('pieChart').getContext('2d');
+      if (pieChartInst) pieChartInst.destroy();
+      pieChartInst = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Negative', 'Neutral', 'Positive'],
+          datasets: [{
+            data: [d.negative, d.neutral, d.positive],
+            backgroundColor: [c.negA, c.neuA, c.posA],
+            borderWidth: 2,
+            borderColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#161513' : '#f9f8f5',
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '62%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, color: c.text } },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  return ` ${ctx.label}: ${ctx.parsed} (${(ctx.parsed / total * 100).toFixed(1)}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ── Product pie chart ──────────────────────────────────────────
+    function setProductStatus(message, isError) {
+      const el = document.getElementById('product-status');
+      if (!el) return;
+      el.textContent = message || '';
+      el.className = 'product-status' + (isError ? ' error' : '');
+    }
+
+    function setActiveProduct(productId) {
+      currentProductId = productId;
+      const badge = document.getElementById('active-product-badge');
+      const label = document.getElementById('product-label');
+      const caption = document.getElementById('product-id-caption');
+      const input = document.getElementById('product-id-input');
+      if (badge) badge.textContent = productId;
+      if (label) label.textContent = productId;
+      if (caption) caption.textContent = productId;
+      if (input && input.value !== productId) input.value = productId;
+    }
+
+    async function loadProductPie(productId = currentProductId) {
+      const d = await apiFetch('/api/product-scoring?product_id=' + encodeURIComponent(productId));
+      const c = chartColors();
+      // update stats cards
+      document.getElementById('prod-positive').textContent = fmt(d.counts.positive);
+      document.getElementById('prod-neutral').textContent = fmt(d.counts.neutral);
+      document.getElementById('prod-negative').textContent = fmt(d.counts.negative);
+      document.getElementById('prod-positive-pct').textContent = d.percentages.positive + '% of reviews';
+      document.getElementById('prod-neutral-pct').textContent = d.percentages.neutral + '% of reviews';
+      document.getElementById('prod-negative-pct').textContent = d.percentages.negative + '% of reviews';
+
+      const ctx = document.getElementById('productPieChart').getContext('2d');
+      if (productPieInst) productPieInst.destroy();
+      productPieInst = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Negative', 'Neutral', 'Positive'],
+          datasets: [{
+            data: [d.counts.negative, d.counts.neutral, d.counts.positive],
+            backgroundColor: [c.negA, c.neuA, c.posA],
+            borderWidth: 2,
+            borderColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#161513' : '#f9f8f5',
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, color: c.text } },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` ${ctx.label}: ${ctx.parsed} (${d.percentages[ctx.label.toLowerCase()]}%)`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ── Top products chart ─────────────────────────────────────────
+    async function loadTopProducts() {
+      const d = await apiFetch('/api/top-products');
+      const c = chartColors();
+      const ctx = document.getElementById('productsChart').getContext('2d');
+      if (productsChartInst) productsChartInst.destroy();
+      productsChartInst = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: d.labels,
+          datasets: [{
+            label: 'Reviews',
+            data: d.counts,
+            backgroundColor: c.primary + 'cc',
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: c.grid }, ticks: { color: c.text } },
+            y: { grid: { display: false }, ticks: { color: c.text, font: { family: "'JetBrains Mono', monospace", size: 11 } } }
+          }
+        }
+      });
+    }
+
+    // ── Recent predictions table ───────────────────────────────────
+    async function loadRecentPredictions() {
+      const d = await apiFetch('/api/recent-predictions?limit=20');
+      const tbody = document.getElementById('predictions-tbody');
+      if (!d.predictions.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:var(--space-10);color:var(--color-text-muted)">No predictions yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = d.predictions.map(p => {
+        const s = (p.PredictedSentiment || '').toLowerCase();
+        const badge = `<span class="sentiment-badge badge-${s}">${p.PredictedSentiment || '—'}</span>`;
+        const stars = '★'.repeat(Math.min(5, parseInt(p.Score) || 0)) + '☆'.repeat(5 - Math.min(5, parseInt(p.Score) || 0));
+        return `<tr>
+      <td class="mono">${(p.Id || '—').substring(0, 8)}</td>
+      <td class="mono">${p.ProductId || '—'}</td>
+      <td class="truncate">${p.ProfileName || '—'}</td>
+      <td><span class="score-star" title="Score: ${p.Score}">${stars}</span></td>
+      <td>${badge}</td>
+      <td class="truncate">${p.Summary || '—'}</td>
+      <td class="mono">${p.ProcessingTime ? String(p.ProcessingTime).substring(0, 16) : '—'}</td>
+    </tr>`;
+      }).join('');
+    }
+
+    // ── Status indicator ───────────────────────────────────────────
+    function setDbStatus(ok) {
+      document.getElementById('db-dot').className = 'db-dot' + (ok ? '' : ' offline');
+      document.getElementById('db-status').textContent = ok ? 'MongoDB connected' : 'Connection error';
+    }
+
+    // ── Refresh timestamp ──────────────────────────────────────────
+    function updateRefreshTime() {
+      document.getElementById('last-refresh').textContent =
+        'Refreshed ' + new Date().toLocaleTimeString();
+    }
+
+    // ── Load all ───────────────────────────────────────────────────
+    async function loadAll() {
+      await Promise.allSettled([
+        loadStats(),
+        loadBarChart(),
+        loadPieChart(),
+        loadTopProducts(),
+        loadProductPie(currentProductId),
+        loadRecentPredictions(),
+      ]);
+      updateRefreshTime();
+    }
+
+    // ── Init ───────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      setActiveProduct(currentProductId);
+      const productForm = document.getElementById('product-form');
+      const productInput = document.getElementById('product-id-input');
+      if (productForm && productInput) {
+        productForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const value = productInput.value.trim();
+          if (!value) {
+            setProductStatus('Enter a product id', true);
+            return;
+          }
+          setProductStatus('Loading...', false);
+          try {
+            setActiveProduct(value);
+            await loadProductPie(value);
+            setProductStatus('', false);
+          } catch (err) {
+            setProductStatus('No data for this product', true);
+          }
+        });
+      }
+      loadAll();
+      // Auto-refresh every 30s
+      setInterval(loadAll, 30000);
+    });
+  </script>
+</body>
+
+</html>

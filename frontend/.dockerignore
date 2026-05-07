@@ -1,0 +1,13 @@
+node_modules/
+.svelte-kit/
+build/
+.env
+.git/
+.gitignore
+.vscode/
+.prettierrc
+.prettierignore
+eslint.config.js
+tsconfig.json
+vite.config.ts
+*.log
