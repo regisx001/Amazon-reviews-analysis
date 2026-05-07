@@ -19,6 +19,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
+# Create static directory for Starlette
+RUN mkdir -p /app/static
+
 # Expose the port FastAPI runs on
 EXPOSE 8000
 

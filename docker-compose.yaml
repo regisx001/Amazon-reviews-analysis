@@ -87,11 +87,11 @@ services:
     ports:
       - "9090:8081"
     environment:
-      - ME_CONFIG_MONGODB_SERVER=${ME_CONFIG_MONGODB_SERVER}
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGODB_ROOT_USER}
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGODB_ROOT_PASSWORD}
-      - ME_CONFIG_BASICAUTH_USERNAME=${ME_CONFIG_BASICAUTH_USERNAME}
-      - ME_CONFIG_BASICAUTH_PASSWORD=${ME_CONFIG_BASICAUTH_PASSWORD}
+      - ME_CONFIG_MONGODB_SERVER=${ME_CONFIG_MONGODB_SERVER:-mongodb}
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=${ME_CONFIG_MONGODB_ADMINUSERNAME:-${MONGODB_ROOT_USER:-admin}}
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=${ME_CONFIG_MONGODB_ADMINPASSWORD:-${MONGODB_ROOT_PASSWORD:-admin123}}
+      - ME_CONFIG_BASICAUTH_USERNAME=${ME_CONFIG_BASICAUTH_USERNAME:-admin}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${ME_CONFIG_BASICAUTH_PASSWORD:-admin123}
     depends_on:
       - mongodb
     networks:
@@ -238,34 +238,37 @@ services:
     depends_on:
       - kafka
       - mongodb
-  # backend:
-  #     build:
-  #         context: ./api
-  #         dockerfile: Dockerfile
-  #     container_name: backend-api
-  #     ports:
-  #         - "8000:8000"
-  #     env_file: *default_env
-  #     environment:
-  #         - MONGODB_HOST=mongodb
-  #     depends_on:
-  #         - mongodb
-  #     networks:
-  #         - amazon_reviews_network
+  backend:
+      build:
+          context: ./api
+          dockerfile: Dockerfile
+      container_name: backend-api
+      ports:
+          - "8000:8000"
+      env_file: *default_env
+      environment:
+          - MONGODB_HOST=mongodb
+      depends_on:
+          - mongodb
+      networks:
+          - amazon_reviews_network
 
-  # frontend:
-  #     build:
-  #         context: ./frontend
-  #         dockerfile: Dockerfile
-  #     container_name: frontend-dashboard
-  #     ports:
-  #         - "5173:3000"
-  #     environment:
-  #         - PUBLIC_API_BASE_URL=http://localhost:8000
-  #     depends_on:
-  #         - backend
-  #     networks:
-  #         - amazon_reviews_network
+  frontend:
+      build:
+          context: ./frontend
+          dockerfile: Dockerfile
+      container_name: frontend-dashboard
+      ports:
+          - "5173:3000"
+      env_file: *default_env
+      environment:
+          - NODE_ENV=production
+          - PORT=3000
+          - PUBLIC_API_BASE_URL=${PUBLIC_API_BASE_URL:-http://localhost:8000}
+      depends_on:
+          - backend
+      networks:
+          - amazon_reviews_network
 volumes:
   mongodb_data:
   zookeeper_data:

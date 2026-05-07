@@ -331,10 +331,10 @@ The project will use test CSV files from `data/test/` for the Kafka producer.
 
 ```bash
 # Start the entire stack
-docker-compose up -d
+docker compose up -d
 
 # Monitor logs
-docker-compose logs -f
+docker compose logs -f
 
 # Or follow a specific service
 docker-compose logs -f kafka
@@ -357,10 +357,10 @@ Preprocess the data into train/val/test splits:
 
 ```bash
 # Start preprocessing job
-docker-compose --profile preprocessing up preprocessing-job
+docker compose --profile preprocessing up preprocessing-job
 
 # Monitor progress
-docker-compose logs -f preprocessing-job
+docker compose logs -f preprocessing-job
 
 # Once complete, verify splits were created
 docker exec preprocessing-job ls -lh /opt/spark/work-dir/data/{train,val,test}
@@ -372,13 +372,13 @@ Trigger the Kafka producer and Spark streaming jobs:
 
 ```bash
 # Start Kafka producer (runs in background)
-docker-compose --profile producer up reviews-producer
+docker compose --profile producer up reviews-producer
 
 # In another terminal, start Spark streaming job
-docker-compose --profile streaming up streaming-job
+docker compose --profile streaming up streaming-job
 
 # Watch for predictions being written to MongoDB
-docker-compose logs -f streaming-job
+docker compose logs -f streaming-job
 ```
 
 ### Step 7: Access the Dashboard

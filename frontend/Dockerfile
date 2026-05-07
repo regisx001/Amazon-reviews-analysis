@@ -3,7 +3,6 @@ FROM oven/bun:latest AS builder
 
 WORKDIR /app
 
-
 # Copy package files
 COPY package.json bun.lock ./
 
@@ -17,14 +16,24 @@ COPY . .
 RUN bun run build
 
 # Runtime stage
-FROM oven/bun:latest
+FROM node:20-slim
 
 WORKDIR /app
 
-# Copy built artifacts and necessary files from builder
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
+# Copy package.json
+COPY --from=builder /app/package.json ./
+
+# Install production dependencies only (express for serving)
+RUN npm install express --production
+
+# Copy built dist directory
+COPY --from=builder /app/dist ./dist
+
+# Copy static files
+COPY --from=builder /app/static ./static
+
+# Copy server.js
+COPY server.js ./
 
 # Environment variables
 ENV NODE_ENV=production
@@ -33,5 +42,5 @@ ENV PORT=3000
 # Expose port
 EXPOSE 3000
 
-# # Run the node app (using the node adapter build)
-# CMD ["node", "build"]
+# Run the server
+CMD ["node", "server.js"]
