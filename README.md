@@ -804,7 +804,6 @@ For production:
 
 Dataset: [Amazon Fine Food Reviews](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews)
 
-For more information, see [PERMISSION.md](PERMISSION.md).
 
 ---
 
