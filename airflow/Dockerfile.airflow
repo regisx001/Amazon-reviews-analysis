@@ -28,4 +28,5 @@ RUN pip install --no-cache-dir \
     kafka-python==2.0.2 \
     pymongo==4.7.0 \
     pandas==2.2.2 \
-    python-dotenv==1.0.0
+    python-dotenv==1.0.0 \
+    nltk
