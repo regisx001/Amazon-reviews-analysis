@@ -2,11 +2,18 @@ FROM apache/airflow:2.9.3-python3.10
 
 USER root
 
-# System deps for kafka-python and pymongo
+# System deps for kafka-python and pymongo, plus Java and Spark
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
+    gcc default-jre-headless wget procps \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+ENV JAVA_HOME=/usr/lib/jvm/default-java
+
+# Download and install Spark for spark-submit
+RUN wget -qO- https://archive.apache.org/dist/spark/spark-3.5.1/spark-3.5.1-bin-hadoop3.tgz | tar zx -C /opt && \
+    mv /opt/spark-3.5.1-bin-hadoop3 /opt/spark
+ENV SPARK_HOME=/opt/spark
+ENV PATH=$PATH:$SPARK_HOME/bin
 
 RUN mkdir -p /opt/airflow/logs/scheduler \
     && chown -R airflow:root /opt/airflow/logs \
