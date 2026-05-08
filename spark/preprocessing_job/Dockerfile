@@ -1,30 +1,34 @@
-# Use the same Spark version as your cluster
 FROM apache/spark:3.5.1
 
-# Switch to root to install additional dependencies (if any)
 USER root
 
-# Copy requirements first (for better caching)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt /tmp/requirements.txt
 
-# Install Python packages (if requirements.txt is not empty)
 RUN if [ -s /tmp/requirements.txt ]; then \
-    pip install --no-cache-dir -r /tmp/requirements.txt; \
+    pip3 install --no-cache-dir -r /tmp/requirements.txt; \
     else \
     echo "No additional requirements."; \
     fi
 
-# Copy the preprocessing script into the image
-COPY spark_preprocessing_job.py /app/spark_preprocessing_job.py
+RUN pip3 install --no-cache-dir nltk
 
-# Change working directory
+ENV NLTK_DATA=/opt/nltk_data
+
+RUN mkdir -p /opt/nltk_data
+RUN python3 -m nltk.downloader -d /opt/nltk_data wordnet
+RUN python3 -m nltk.downloader -d /opt/nltk_data omw-1.4
+
 WORKDIR /app
+COPY spark_preprocessing_job.py .
 
-# Switch to the non‑root user (optional but good practice)
 USER spark
 
-# Default command: submit the job to the Spark master
-# Override the master URL via --master if needed
 CMD ["/opt/spark/bin/spark-submit", \
     "--master", "spark://spark-master:7077", \
+    "--driver-memory", "4g", \
+    "--executor-memory", "4g", \
     "spark_preprocessing_job.py"]
