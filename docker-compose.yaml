@@ -187,6 +187,36 @@ services:
       - amazon_reviews_network
     volumes:
       - ./data:/opt/spark/work-dir/data # to access the CSV
+  training-job:
+    build:
+      context: ./spark/training_job
+      dockerfile: Dockerfile
+    container_name: training-job
+    profiles:
+      - training
+    env_file: *default_env
+    depends_on:
+      spark-master:
+        condition: service_started
+    networks:
+      - amazon_reviews_network
+    volumes:
+      - ./data:/opt/spark/work-dir/data # read train/val, write models + model_insights.json
+  evaluation-job:
+    build:
+      context: ./spark/evaluation_job
+      dockerfile: Dockerfile
+    container_name: evaluation-job
+    profiles:
+      - evaluation
+    env_file: *default_env
+    depends_on:
+      spark-master:
+        condition: service_started
+    networks:
+      - amazon_reviews_network
+    volumes:
+      - ./data:/opt/spark/work-dir/data
   streaming-job:
     build:
       context: ./spark/streaming_job
