@@ -1,105 +1,105 @@
-# 🚀 Amazon Reviews : Plateforme d'Analyse de Sentiment Temps Réel
+# 🚀 Amazon Reviews: Real-Time Sentiment Analysis Platform
 
-**Un système de Data Engineering complet et scalable pour l'analyse émotionnelle des avis clients Amazon, combinant Streaming, Machine Learning et Business Intelligence.**
-
----
-
-## 🧭 Focus : Business Logic & Smart Insights
-Contrairement aux tableaux de bord classiques, ce système utilise l'IA pour extraire la satisfaction réelle, au-delà des simples notes "étoiles".
-
-### 🏆 Système de Recommandation (Pépites vs Flops)
-L'onglet **Smart Insights** calcule en temps réel la performance des produits :
-- **Satisfaction Rate** : Ratio (Avis Positifs / Total) * 100.
-- **Top 10 Recommandés (Pépites)** : Produits ayant le taux de satisfaction le plus élevé, filtrés pour avoir **au moins 3 avis** (Indice de confiance).
-- **Quality Alert (Flops)** : Produits subissant un fort taux de déception textuelle, permettant aux vendeurs d'agir avant que la note moyenne ne chute.
-
-### 🧠 Accuracy Live (Audit Qualité)
-Le système compare en permanence la prédiction de l'IA avec la note humaine (1-5 ⭐) pour calculer une **Accuracy en temps réel**, permettant de surveiller la santé du modèle sans attendre les rapports hebdomadaires.
+**A comprehensive, scalable Data Engineering system for emotional analysis of Amazon customer reviews, combining Streaming, Machine Learning, and Business Intelligence.**
 
 ---
 
-## 🛠️ Stack Technologique
+## 🧭 Focus: Business Logic & Smart Insights
+Unlike traditional dashboards, this system leverages AI to extract real customer satisfaction beyond simple "star" ratings.
 
-| Couche | Technologies |
+### 🏆 Recommendation System (Gems vs. Flops)
+The **Smart Insights** tab calculates product performance in real-time:
+- **Satisfaction Rate**: Calculated as `(Positive Reviews / Total) * 100`.
+- **Top 10 Recommended (Gems)**: Products with the highest satisfaction rates, filtered for a minimum of **3 reviews** (Confidence Index).
+- **Quality Alert (Flops)**: Products suffering from high textual disappointment rates, allowing sellers to act before the average star rating drops.
+
+### 🧠 Live Accuracy (Quality Audit)
+The system constantly compares AI predictions with human ratings (1-5 ⭐) to calculate **Real-Time Accuracy**, enabling model health monitoring without waiting for weekly reports.
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technologies |
 | :--- | :--- |
 | **Ingestion & Streaming** | Apache Kafka, Zookeeper |
-| **Traitement Distribué** | Apache Spark (PySpark), Spark Streaming |
-| **Intelligence Artificielle** | Logistic Regression (MLlib), NLTK, TF-IDF |
-| **Base de Données** | MongoDB (NoSQL) |
+| **Distributed Processing** | Apache Spark (PySpark), Spark Streaming |
+| **Artificial Intelligence** | Logistic Regression (MLlib), NLTK, TF-IDF |
+| **Database** | MongoDB (NoSQL) |
 | **Backend & API** | FastAPI (Python), REST, SSE (Server-Sent Events) |
 | **Frontend UI** | SvelteKit, TailwindCSS, Chart.js, Lucide Icons |
 | **Orchestration** | Apache Airflow |
-| **Conteneurisation** | Docker & Docker Compose |
+| **Containerization** | Docker & Docker Compose |
 
 ---
 
-## 🏗️ Architecture du Pipeline
+## 🏗️ Pipeline Architecture
 
 ```mermaid
 graph LR
-    A[Avis Clients CSV] -->|Kafka Producer| B(Kafka Topic: reviews.raw)
-    B -->|Spark Streaming| C{IA : Prédiction Sentiment}
-    C -->|Batch Insert| D[(MongoDB : predictions)]
+    A[Customer Reviews CSV] -->|Kafka Producer| B(Kafka Topic: reviews.raw)
+    B -->|Spark Streaming| C{AI: Sentiment Prediction}
+    C -->|Batch Insert| D[(MongoDB: predictions)]
     D -->|Real-time Aggregation| E[FastAPI Backend]
-    E -->|Push 5s| F[Dashboard SvelteKit]
+    E -->|Push 5s| F[SvelteKit Dashboard]
     
     subgraph "Smart Logic"
-    D --> G[Calcul Accuracy Live]
-    D --> H[Calcul Pépites vs Flops]
+    D --> G[Live Accuracy Calculation]
+    D --> H[Gems vs. Flops Analysis]
     end
 ```
 
 ---
 
-## 🚀 Lancement Rapide (Quick Start)
+## 🚀 Quick Start
 
-### 1. Pré-requis
-- Docker & Docker Compose installés.
-- 8 Go de RAM minimum alloués à Docker.
+### 1. Prerequisites
+- Docker & Docker Compose installed.
+- Minimum 8GB RAM allocated to Docker.
 
-### 2. Démarrage de l'infrastructure
+### 2. Infrastructure Setup
 ```powershell
-# Cloner et lancer
-git clone <votre-repo>
+# Clone and launch
+git clone <your-repo-url>
 cd Amazon-reviews-analysis
 docker-compose up -d
 ```
 
-### 3. Lancer le Pipeline IA
+### 3. Launch AI Pipeline
 ```powershell
-# Pré-traiter les données (Split Train/Test)
+# Preprocess data (Split Train/Test)
 docker-compose --profile preprocessing up preprocessing-job
 
-# Lancer l'analyse en continu
+# Start real-time analysis
 docker-compose start streaming-job
 
-# Lancer l'envoi des avis
+# Start review ingestion
 docker-compose restart reviews-producer
 ```
 
-### 4. Accès aux interfaces
-- **Dashboard** : [http://localhost:5173](http://localhost:5173)
-- **API Documentation** : [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Kafka UI** : [http://localhost:8090](http://localhost:8090)
-- **Mongo Express** : [http://localhost:9090](http://localhost:9090)
+### 4. Access Interfaces
+- **Dashboard**: [http://localhost:5173](http://localhost:5173)
+- **API Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Kafka UI**: [http://localhost:8090](http://localhost:8090)
+- **Mongo Express**: [http://localhost:9090](http://localhost:9090)
 
 ---
 
-## 📸 Aperçu des Fonctionnalités
+## 📸 Key Features
 
-- **Live Monitor** : Flux continu des avis avec prédiction immédiate de l'IA.
-- **Smart Insights** : Classement dynamique des meilleurs et pires produits (Rafraîchissement auto toutes les 5s).
-- **Model Insights** : Métriques techniques (Précision, Recall, F1-Score) calculées en temps réel.
-- **Dark Mode UI** : Interface moderne optimisée pour la surveillance 24/7.
-
----
-
-## 📁 Structure du Projet
-- `/spark` : Jobs de streaming et de preprocessing.
-- `/api` : Backend FastAPI optimisé pour MongoDB.
-- `/frontend` : Dashboard SvelteKit (UI/UX Premium).
-- `/kafka` : Producteur de données pour simuler le flux réel.
-- `/airflow` : DAGs d'orchestration pour les rapports quotidiens.
+- **Live Monitor**: Continuous feed of reviews with immediate AI sentiment prediction.
+- **Smart Insights**: Dynamic ranking of best and worst products (Auto-refresh every 5s).
+- **Model Insights**: Technical metrics (Accuracy, Recall, F1-Score) calculated in real-time.
+- **Dark Mode UI**: Modern interface optimized for 24/7 monitoring.
 
 ---
-*Projet réalisé dans le cadre d'un pipeline de Data Engineering End-to-End.*
+
+## 📁 Project Structure
+- `/spark`: Streaming and preprocessing jobs.
+- `/api`: FastAPI backend optimized for MongoDB.
+- `/frontend`: SvelteKit dashboard (Premium UI/UX).
+- `/kafka`: Data producer for real-time flow simulation.
+- `/airflow`: Orchestration DAGs for daily reporting.
+
+---
+*Project developed as an End-to-End Data Engineering pipeline.*
