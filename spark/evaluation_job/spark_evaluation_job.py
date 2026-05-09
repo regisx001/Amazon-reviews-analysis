@@ -35,6 +35,7 @@ spark = (
     SparkSession.builder
     .appName("AmazonReviews-ModelEvaluation")
     .config("spark.sql.shuffle.partitions", "8")
+    .config("spark.hadoop.fs.permissions.umask-mode", "000")
     .getOrCreate()
 )
 spark.sparkContext.setLogLevel("WARN")
@@ -127,6 +128,10 @@ insights = {
 }
 
 os.makedirs(os.path.dirname(INSIGHTS), exist_ok=True)
+try:
+    os.chmod(os.path.dirname(INSIGHTS), 0o777)
+except:
+    pass
 with open(INSIGHTS, "w") as f:
     json.dump(insights, f, indent=4)
 print(f"\n✓ model_insights.json written → {INSIGHTS}")

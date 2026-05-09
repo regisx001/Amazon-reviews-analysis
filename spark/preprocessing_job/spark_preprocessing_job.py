@@ -58,15 +58,25 @@ NEGATION_WORDS = {
 }
 # ----------------------------
 
+# Ensure OUTPUT_DIR exists and is writable by everyone (Spark workers)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 try:
     os.chmod(OUTPUT_DIR, 0o777)
 except Exception as e:
     print(f"Warning: could not chmod {OUTPUT_DIR}: {e}")
 
+# Pre-create and chmod all subdirs to avoid permission issues during Spark write
+for d in [TRAIN_DIR, VAL_DIR, TEST_DIR, TRAIN_FEAT, VAL_FEAT, TEST_FEAT, os.path.join(OUTPUT_DIR, "models")]:
+    os.makedirs(d, exist_ok=True)
+    try:
+        os.chmod(d, 0o777)
+    except:
+        pass
+
 spark = SparkSession.builder \
     .appName("Preprocessing-NLP-Pipeline") \
     .config("spark.sql.shuffle.partitions", "8") \
+    .config("spark.hadoop.fs.permissions.umask-mode", "000") \
     .getOrCreate()
 spark.sparkContext.setLogLevel("WARN")
 
