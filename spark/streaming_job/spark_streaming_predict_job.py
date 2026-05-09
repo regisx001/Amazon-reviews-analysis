@@ -41,7 +41,7 @@ MONGO_DB = os.getenv("MONGODB_DATABASE",           "amazon_reviews")
 MONGO_COLLECTION = os.getenv("MONGO_COLLECTION",           "predictions")
 MONGO_BATCH_SIZE = int(os.getenv("MONGO_BATCH_SIZE", "1000"))
 
-BASE_DIR = os.getenv("BASE_DIR", "/opt/spark/work-dir/data")
+BASE_DIR = os.getenv("BASE_DIR", "/opt/spark/work-dir/data/output")
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 LR_PATH = os.path.join(MODEL_DIR, "best_lr")
 IDF_PATH = os.path.join(MODEL_DIR, "idf")

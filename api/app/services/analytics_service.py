@@ -68,8 +68,14 @@ class AnalyticsService:
             except:
                 continue
 
-        sorted_months = sorted(monthly.keys(), key=lambda k: datetime.strptime(
-            k, "%b'%y") if "%b'%y" in k else datetime.min)
+        # Create a mapping for sorting
+        def sort_key(k):
+            try:
+                return datetime.strptime(k, "%b'%y")
+            except:
+                return datetime.min
+
+        sorted_months = sorted(monthly.keys(), key=sort_key)
         return TrendData(
             labels=sorted_months,
             positive=[monthly[m]["positive"] for m in sorted_months],

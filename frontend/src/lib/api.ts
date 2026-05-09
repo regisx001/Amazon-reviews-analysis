@@ -156,8 +156,16 @@ export function fetchStats(): Promise<StatsResponse> {
     return apiFetch<StatsResponse>("/api/stats");
 }
 
+export function fetchStatsAggregated(): Promise<StatsResponse> {
+    return apiFetch<StatsResponse>("/api/stats/aggregated");
+}
+
 export function fetchPredictionsByDate(): Promise<PredictionsByDateResponse> {
     return apiFetch<PredictionsByDateResponse>("/api/predictions-by-date");
+}
+
+export function fetchPredictionsByDateAggregated(): Promise<PredictionsByDateResponse> {
+    return apiFetch<PredictionsByDateResponse>("/api/predictions-by-date/aggregated");
 }
 
 export function fetchProductScoring(productId: string): Promise<ProductScoringResponse> {

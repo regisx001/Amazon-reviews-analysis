@@ -164,7 +164,7 @@ services:
     environment:
       - KAFKA_BOOTSTRAP=kafka:9092
       - KAFKA_TOPIC=reviews.raw
-      - TEST_CSV=/app/data/test/part-*.csv
+      - TEST_CSV=/app/data/output/test/part-*.csv
       - TEST_LIMIT=0
       - KAFKA_SEND_DELAY=0.2
     depends_on:

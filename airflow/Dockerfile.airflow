@@ -1,4 +1,4 @@
-FROM apache/airflow:2.9.3-python3.10
+FROM apache/airflow:2.9.3-python3.8
 
 USER root
 
@@ -25,8 +25,8 @@ USER airflow
 RUN pip3 install --no-cache-dir \
     apache-airflow-providers-apache-spark==4.9.0 \
     apache-airflow-providers-mongo==4.2.0 \
-    kafka-python==2.0.2 \
-    pymongo==4.7.0 \
-    pandas==2.2.2 \
-    python-dotenv==1.0.0 \
+    kafka-python \
+    pymongo \
+    pandas \
+    python-dotenv \
     nltk
