@@ -8,6 +8,7 @@ Logs a warning if thresholds are exceeded.
 
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
 
 NEUTRAL_DRIFT_THRESHOLD = 0.30   # alert if neutral > 30%
@@ -238,8 +239,22 @@ def model_evaluation():
 
     distribution = compute_distribution()
     drift_result = check_drift(distribution)
-    persist_drift_status(distribution, drift_result)
-    persist_model_insights()
+    drift_task = persist_drift_status(distribution, drift_result)
+
+    run_spark_evaluation = SparkSubmitOperator(
+        task_id="run_spark_evaluation",
+        conn_id="spark_default",
+        application="/opt/airflow/spark/evaluation_job/spark_evaluation_job.py",
+        name="airflow-spark-evaluation",
+        verbose=True,
+    )
+
+    insights_task = persist_model_insights()
+
+    # The spark job evaluates the model and writes insights json, so it MUST
+    # run before persisting insights to MongoDB.
+    run_spark_evaluation >> insights_task
+
     final_report(distribution, drift_result)
 
 
