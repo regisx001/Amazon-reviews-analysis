@@ -70,5 +70,11 @@ async def get_aggregation_status(
 
 
 @router.get("/model-insights", response_model=ModelInsights)
-async def get_model_insights(col=Depends(get_model_insights_collection)):
-    return AnalyticsService.get_latest_model_insights(col)
+async def get_model_insights(
+    col=Depends(get_model_insights_collection),
+    pred_col=Depends(get_collection)
+):
+    insights = AnalyticsService.get_latest_model_insights(col)
+    if insights.status == "no_data":
+        return AnalyticsService.get_realtime_model_insights(pred_col)
+    return insights

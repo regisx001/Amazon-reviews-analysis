@@ -57,3 +57,8 @@ def get_quality_audit_collection():
 def get_recommendations_collection():
     settings = get_settings()
     return get_client()[settings.mongo_db][settings.mongo_recommendations_collection]
+
+
+def get_predictions_collection():
+    settings = get_settings()
+    return get_client()[settings.mongo_db][settings.mongo_collection]

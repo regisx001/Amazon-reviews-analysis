@@ -16,6 +16,8 @@ from app.core.database import (
     get_buzz_alerts_collection,
     get_daily_digest_collection,
     get_quality_audit_collection,
+    get_recommendations_collection,
+    get_predictions_collection,
 )
 
 router = APIRouter(tags=["Monitoring"])
@@ -101,30 +103,60 @@ async def get_digest_history(
 
 @router.get("/model-live-accuracy")
 async def get_model_live_accuracy(
-    days: int = Query(default=7, le=30),
-    col: Collection = Depends(get_quality_audit_collection),
+    limit: int = Query(default=1000, le=5000),
+    col: Collection = Depends(get_predictions_collection),
 ):
     """
-    Returns the last N days of live accuracy audits.
-    Useful to track model accuracy drift over time.
+    Calculates model accuracy in REAL-TIME by comparing human stars (Score)
+    with AI predictions.
     """
-    docs = list(
-        col.find({}, {"_id": 0})
-           .sort("date", -1)
-           .limit(days)
-    )
-    if not docs:
-        return {"days": days, "status": "no_data", "audits": []}
+    pipeline = [
+        # 1. Project the comparison logic
+        {
+            "$project": {
+                "PredictedSentiment": 1,
+                "HumanSentiment": {
+                    "$cond": [
+                        {"$lte": ["$Score", 2]}, "negative",
+                        {"$cond": [
+                            {"$eq": ["$Score", 3]}, "neutral", "positive"
+                        ]}
+                    ]
+                }
+            }
+        },
+        # 2. Group to count matches
+        {
+            "$group": {
+                "_id": None,
+                "total": {"$sum": 1},
+                "correct": {
+                    "$sum": {
+                        "$cond": [{"$eq": ["$PredictedSentiment", "$HumanSentiment"]}, 1, 0]
+                    }
+                }
+            }
+        }
+    ]
 
-    # Compute average accuracy over the period
-    valid_acc = [d["live_accuracy_pct"] for d in docs if d.get("live_accuracy_pct") is not None]
-    avg_acc   = round(sum(valid_acc) / len(valid_acc), 2) if valid_acc else None
+    results = list(col.aggregate(pipeline))
+    
+    if not results or results[0]["total"] == 0:
+        return {
+            "status": "no_data",
+            "accuracy_pct": 0,
+            "total_samples": 0,
+            "message": "Start the stream to see real-time accuracy."
+        }
+
+    stats = results[0]
+    accuracy = round((stats["correct"] / stats["total"]) * 100, 2)
 
     return {
-        "days":             days,
-        "average_accuracy": avg_acc,
-        "latest_accuracy":  docs[0].get("live_accuracy_pct") if docs else None,
-        "audits":           docs,
+        "status": "success",
+        "accuracy_pct": accuracy,
+        "total_samples": stats["total"],
+        "generated_at": datetime.utcnow().isoformat()
     }
 
 
@@ -132,18 +164,76 @@ async def get_model_live_accuracy(
 
 @router.get("/recommendations")
 async def get_recommendations(
-    col: Collection = Depends(get_recommendations_collection),
+    col_predictions: Collection = Depends(get_predictions_collection),
 ):
     """
-    Returns the Top 10 Recommended products (Pépites) and 
-    the Top 10 Quality Alerts (Flops) based on AI sentiment analysis.
+    Calculates the Top 10 Recommended and Top 10 Flops in REAL-TIME
+    based on all predictions stored in MongoDB.
     """
-    doc = col.find_one({"type": "weekly_rankings"}, {"_id": 0})
-    if not doc:
-        return {
-            "status": "no_data",
-            "message": "Recommendations have not been calculated yet. Run the weekly_product_ranking DAG.",
-            "top_recommended": [],
-            "quality_alerts": []
+    pipeline = [
+        # 1. Group by ProductId
+        {
+            "$group": {
+                "_id": "$ProductId",
+                "total_reviews": {"$sum": 1},
+                "avg_human_score": {"$avg": "$Score"},
+                "positives": {
+                    "$sum": {"$cond": [{"$eq": ["$PredictedSentiment", "positive"]}, 1, 0]}
+                },
+                "negatives": {
+                    "$sum": {"$cond": [{"$eq": ["$PredictedSentiment", "negative"]}, 1, 0]}
+                },
+                # Get the last product name/summary seen
+                "sample_summary": {"$first": "$Summary"}
+            }
+        },
+        # 2. Filter: Only products with at least 3 reviews to ensure confidence
+        {"$match": {"total_reviews": {"$gte": 3}}},
+        # 3. Calculate Satisfaction Score
+        {
+            "$addFields": {
+                "satisfaction_score": {"$multiply": [{"$divide": ["$positives", "$total_reviews"]}, 100]},
+                "disappointment_score": {"$multiply": [{"$divide": ["$negatives", "$total_reviews"]}, 100]}
+            }
         }
-    return doc
+    ]
+
+    results = list(col_predictions.aggregate(pipeline))
+
+    # Sort: Primary key is the score, secondary key is the volume (total_reviews)
+    # This ensures that a 100% with 10 reviews is better than a 100% with 3 reviews.
+    top_recommended = sorted(
+        results, 
+        key=lambda x: (x['satisfaction_score'], x['total_reviews']), 
+        reverse=True
+    )[:10]
+
+    quality_alerts = sorted(
+        results, 
+        key=lambda x: (x['disappointment_score'], x['total_reviews']), 
+        reverse=True
+    )[:10]
+
+    return {
+        "status": "success",
+        "type": "real_time_rankings",
+        "generated_at": datetime.utcnow().isoformat(),
+        "top_recommended": [
+            {
+                "product_id": item["_id"],
+                "summary": item["sample_summary"],
+                "satisfaction_pct": round(item["satisfaction_score"], 1),
+                "avg_human_score": round(item.get("avg_human_score", 0), 1),
+                "total_reviews": item["total_reviews"]
+            } for item in top_recommended
+        ],
+        "quality_alerts": [
+            {
+                "product_id": item["_id"],
+                "summary": item["sample_summary"],
+                "disappointment_pct": round(item["disappointment_score"], 1),
+                "avg_human_score": round(item.get("avg_human_score", 0), 1),
+                "total_reviews": item["total_reviews"]
+            } for item in quality_alerts
+        ]
+    }

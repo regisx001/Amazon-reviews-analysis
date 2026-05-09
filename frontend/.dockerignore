@@ -7,7 +7,4 @@ build/
 .vscode/
 .prettierrc
 .prettierignore
-eslint.config.js
-tsconfig.json
-vite.config.ts
 *.log

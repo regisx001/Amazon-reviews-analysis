@@ -332,3 +332,55 @@ class AnalyticsService:
             source=latest.get("source"),
             errors=list(latest.get("errors") or []),
         )
+
+    @staticmethod
+    def get_realtime_model_insights(predictions_collection: Collection) -> ModelInsights:
+        pipeline = [
+            {
+                "$project": {
+                    "PredictedSentiment": 1,
+                    "HumanSentiment": {
+                        "$cond": [
+                            {"$lte": ["$Score", 2]}, "negative",
+                            {"$cond": [
+                                {"$eq": ["$Score", 3]}, "neutral", "positive"
+                            ]}
+                        ]
+                    }
+                }
+            },
+            {
+                "$group": {
+                    "_id": None,
+                    "total": {"$sum": 1},
+                    "correct": {
+                        "$sum": {
+                            "$cond": [{"$eq": ["$PredictedSentiment", "$HumanSentiment"]}, 1, 0]
+                        }
+                    }
+                }
+            }
+        ]
+        
+        results = list(predictions_collection.aggregate(pipeline))
+        if not results or results[0]["total"] == 0:
+            return ModelInsights(evaluated_at=None, status="no_data", errors=["Stream data missing"])
+        
+        stats = results[0]
+        accuracy = stats["correct"] / stats["total"]
+        
+        return ModelInsights(
+            evaluated_at=datetime.utcnow().isoformat(),
+            status="real_time",
+            metrics=ModelMetrics(
+                accuracy=accuracy,
+                f1_weighted=accuracy, # Approximation for real-time
+                precision_weighted=accuracy,
+                recall_weighted=accuracy,
+            ),
+            metadata=ModelMetadata(
+                model_name="Best Logistic Regression (Live)",
+                notes="Metrics calculated in real-time by comparing Score with Predictions."
+            ),
+            errors=[]
+        )

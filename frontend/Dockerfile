@@ -12,8 +12,8 @@ RUN bun install
 # Copy source code
 COPY . .
 
-# Build the app (SvelteKit with node adapter)
-RUN bun run build
+# Prepare SvelteKit and Build
+RUN bun run prepare && bun run build
 
 # Runtime stage
 FROM oven/bun:latest

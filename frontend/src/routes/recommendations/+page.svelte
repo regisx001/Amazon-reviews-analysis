@@ -1,20 +1,28 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fetchRecommendations, type RecommendationsResponse } from '$lib/api';
-	import { ThumbsUp, ThumbsDown, Info, ShoppingCart, AlertTriangle, RefreshCw, LayoutDashboard } from 'lucide-svelte';
+	import { 
+		ThumbsUp, 
+		ThumbsDown, 
+		RefreshCw, 
+		Package, 
+		TrendingUp, 
+		AlertOctagon,
+		ArrowRight
+	} from 'lucide-svelte';
 
-	let data = $state<RecommendationsResponse | null>(null);
+	let data = $state<any>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	let refreshInterval: any;
 
 	async function loadRankings() {
-		loading = true;
-		error = null;
 		try {
-			data = await fetchRecommendations();
+			const res = await fetchRecommendations();
+			data = res;
 		} catch (e) {
 			console.error(e);
-			error = 'Failed to load recommendations. Make sure the API is running and the DAG has been executed.';
+			error = 'API Error: Connection failed.';
 		} finally {
 			loading = false;
 		}
@@ -22,151 +30,236 @@
 
 	onMount(() => {
 		loadRankings();
+		// Auto refresh every 5 seconds for real-time feeling
+		refreshInterval = setInterval(loadRankings, 5000);
 	});
 
-	function formatPct(val: number) {
-		return val.toFixed(1);
-	}
+	import { onDestroy } from 'svelte';
+	onDestroy(() => {
+		if (refreshInterval) clearInterval(refreshInterval);
+	});
 </script>
 
-<div class="recommendations-page">
-	<div class="flex justify-between items-center mb-6" style="margin-bottom: 2rem;">
+<div class="reco-container">
+	<!-- Page Header -->
+	<div class="flex justify-between items-end mb-8" style="margin-bottom: 2.5rem;">
 		<div>
-			<h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">IA Product Recommendations</h1>
-			<p style="color: var(--fg-muted); font-size: 0.875rem;">
-				Based on AI text analysis, not just star ratings.
+			<div class="badge badge-neutral" style="margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; font-size: 0.65rem;">
+				BUSINESS LOGIC : SMART INSIGHTS
+			</div>
+			<h1 style="font-size: 1.875rem; margin: 0; font-weight: 700;">
+				Système de <span style="color: var(--accent-fg)">Recommandation par Sentiment</span>
+			</h1>
+			<p style="color: var(--fg-muted); margin-top: 0.5rem;">
+				Analyse en temps réel de la performance produits basée sur l'IA textuelle.
 			</p>
 		</div>
-		<div class="flex items-center gap-4">
-			<a href="/dashboard" class="btn" style="text-decoration: none;">
-				<LayoutDashboard size={14} style="margin-right: 0.5rem;" />
-				Back to Dashboard
-			</a>
-			<button class="btn" onclick={loadRankings} disabled={loading}>
-				<RefreshCw size={14} class={loading ? 'animate-spin' : ''} style="margin-right: 0.5rem;" />
-				Refresh
-			</button>
-		</div>
+		<button class="btn" onclick={loadRankings} disabled={loading} style="border-radius: 99px; padding: 0.6rem 1.25rem;">
+			<RefreshCw size={16} class={loading ? 'animate-spin' : ''} style="margin-right: 0.5rem;" />
+			Actualiser les Smart Insights
+		</button>
 	</div>
 
 	{#if error}
-		<div class="card" style="border-left: 4px solid var(--danger-fg); color: var(--danger-fg);">
-			<div class="flex items-center gap-2">
-				<AlertTriangle size={18} />
-				<span>{error}</span>
-			</div>
+		<div class="card" style="border: 1px solid var(--danger-fg); background: var(--danger-subtle);">
+			<p style="color: var(--danger-fg); margin: 0;">{error}</p>
 		</div>
-	{:else if loading}
-		<div class="flex justify-center items-center" style="height: 300px; color: var(--fg-muted);">
-			<RefreshCw class="animate-spin" style="margin-right: 1rem;" />
-			Analyzing sentiments and calculating rankings...
+	{:else if loading && !data}
+		<div class="flex flex-col items-center justify-center" style="height: 400px; color: var(--fg-muted);">
+			<RefreshCw size={32} class="animate-spin" style="margin-bottom: 1rem;" />
+			<p>Calcul des indices de confiance en cours...</p>
 		</div>
 	{:else if data}
-		{#if data.status === 'no_data'}
-			<div class="card" style="text-align: center; padding: 3rem;">
-				<Info size={48} style="margin: 0 auto 1.5rem; color: var(--accent-fg);" />
-				<h2 style="margin-bottom: 0.5rem;">No recommendations yet</h2>
-				<p style="color: var(--fg-muted); margin-bottom: 1.5rem;">
-					The weekly ranking DAG hasn't run yet.
-				</p>
-				<code style="display: block; padding: 1rem; background: var(--canvas-inset); border-radius: 6px;">
-					airflow dags trigger weekly_product_ranking
-				</code>
-			</div>
-		{:else}
-			<div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-				<!-- COLUMN 1: TOP RECOMMENDED (PEPITESS) -->
-				<div class="card" style="border-top: 4px solid var(--success-fg);">
-					<div class="card-title flex items-center gap-2" style="color: var(--success-fg); margin-bottom: 1.5rem;">
-						<ThumbsUp size={20} />
-						<span>🏆 Les Pépites IA (Top 10)</span>
-					</div>
-					<p style="font-size: 0.875rem; color: var(--fg-muted); margin-bottom: 1.5rem;">
-						Products with the highest positive sentiment ratios (minimum {data.metadata.confidence_threshold} reviews).
-					</p>
-
-					<div class="table-container">
-						<table>
-							<thead>
-								<tr>
-									<th>Product ID</th>
-									<th>Satisfaction</th>
-									<th>Reviews</th>
-								</tr>
-							</thead>
-							<tbody>
-								{#each data.top_recommended as p}
-									<tr>
-										<td class="mono">
-											<div class="flex items-center gap-2">
-												<ShoppingCart size={14} style="color: var(--fg-muted);" />
-												<a href="/dashboard/{p.product_id}">{p.product_id}</a>
-											</div>
-										</td>
-										<td>
-											<span style="font-weight: 600; color: var(--success-fg);">{formatPct(p.satisfaction_rate)}%</span>
-										</td>
-										<td>{p.total_reviews}</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
+		<div class="reco-grid">
+			<!-- TOP 10 RECOMMENDED -->
+			<div class="reco-column">
+				<div class="reco-column-header" style="color: var(--success-fg)">
+					<ThumbsUp size={20} fill="currentColor" />
+					<span>🏆 TOP 10 RECOMMANDÉS (PÉPITES)</span>
 				</div>
+				<p class="reco-subtitle">Produits avec le plus haut taux de satisfaction IA (min. 3 avis)</p>
 
-				<!-- COLUMN 2: QUALITY ALERTS (FLOPS) -->
-				<div class="card" style="border-top: 4px solid var(--danger-fg);">
-					<div class="card-title flex items-center gap-2" style="color: var(--danger-fg); margin-bottom: 1.5rem;">
-						<ThumbsDown size={20} />
-						<span>⚠️ Alertes Qualité (Flops 10)</span>
-					</div>
-					<p style="font-size: 0.875rem; color: var(--fg-muted); margin-bottom: 1.5rem;">
-						Products with the highest dissatisfaction rates detected by AI analysis.
-					</p>
-
-					<div class="table-container">
-						<table>
-							<thead>
-								<tr>
-									<th>Product ID</th>
-									<th>Déception</th>
-									<th>Reviews</th>
-								</tr>
-							</thead>
-							<tbody>
-								{#each data.quality_alerts as p}
-									<tr>
-										<td class="mono">
-											<div class="flex items-center gap-2">
-												<AlertTriangle size={14} style="color: var(--fg-muted);" />
-												<a href="/dashboard/{p.product_id}">{p.product_id}</a>
-											</div>
-										</td>
-										<td>
-											<span style="font-weight: 600; color: var(--danger-fg);">{formatPct(p.dissatisfaction_rate)}%</span>
-										</td>
-										<td>{p.total_reviews}</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
+				<div class="reco-list">
+					{#each data.top_recommended as p, i}
+						<div class="reco-item">
+							<div class="reco-rank">{i + 1}</div>
+							<div class="reco-info">
+								<div class="reco-id mono">{p.product_id}</div>
+								<div class="reco-summary">{p.summary || 'Aucune description'}</div>
+								<div style="font-size: 0.65rem; color: var(--fg-subtle); margin-top: 0.25rem;">
+									⭐ Moyenne Étoiles : {p.avg_human_score}/5 | 📊 Confiance : {p.total_reviews} avis
+								</div>
+							</div>
+							<div class="reco-score success">
+								{p.satisfaction_pct}% 🤩
+							</div>
+						</div>
+					{:else}
+						<div class="empty-state">Pas encore de pépites détectées.</div>
+					{/each}
 				</div>
 			</div>
 
-			<div style="margin-top: 1.5rem; text-align: center; color: var(--fg-muted); font-size: 0.75rem;">
-				Last calculated on {new Date(data.updated_at).toLocaleString()} | 
-				Week: {data.week_label} | 
-				Total eligible products scanned: {data.metadata.total_eligible}
+			<!-- QUALITY ALERTS -->
+			<div class="reco-column">
+				<div class="reco-column-header" style="color: var(--danger-fg)">
+					<AlertOctagon size={20} fill="currentColor" />
+					<span>⚠️ ALERTES QUALITÉ (FLOPS)</span>
+				</div>
+				<p class="reco-subtitle">Déception textuelle élevée : agir avant que la note ne chute</p>
+
+				<div class="reco-list">
+					{#each data.quality_alerts as p, i}
+						<div class="reco-item">
+							<div class="reco-rank">{i + 1}</div>
+							<div class="reco-info">
+								<div class="reco-id mono">{p.product_id}</div>
+								<div class="reco-summary">{p.summary || 'Aucune description'}</div>
+								<div style="font-size: 0.65rem; color: var(--fg-subtle); margin-top: 0.25rem;">
+									⭐ Moyenne Étoiles : {p.avg_human_score}/5 | 📊 Confiance : {p.total_reviews} avis
+								</div>
+							</div>
+							<div class="reco-score danger">
+								{p.disappointment_pct}% 😡
+							</div>
+						</div>
+					{:else}
+						<div class="empty-state">Aucun flop critique détecté.</div>
+					{/each}
+				</div>
 			</div>
-		{/if}
+		</div>
+
+		<div class="footer-note">
+			<div class="flex items-center gap-2">
+				<TrendingUp size={14} />
+				Calculé en temps réel à {new Date(data.generated_at).toLocaleTimeString()}
+			</div>
+			<div>Seuls les produits avec un indice de confiance ≥ 3 sont éligibles.</div>
+		</div>
 	{/if}
 </div>
 
 <style>
+	.reco-container {
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+
+	.reco-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 2rem;
+	}
+
+	@media (max-width: 1024px) {
+		.reco-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.reco-column {
+		background: var(--canvas-subtle);
+		border: 1px solid var(--border-default);
+		border-radius: var(--radius-lg);
+		padding: 1.5rem;
+		box-shadow: var(--shadow-md);
+	}
+
+	.reco-column-header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		font-weight: 800;
+		font-size: 0.9rem;
+		letter-spacing: 0.05em;
+		margin-bottom: 0.5rem;
+	}
+
+	.reco-subtitle {
+		font-size: 0.75rem;
+		color: var(--fg-muted);
+		margin-bottom: 1.5rem;
+	}
+
+	.reco-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.reco-item {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 0.75rem 1rem;
+		background: var(--canvas-default);
+		border: 1px solid var(--border-muted);
+		border-radius: var(--radius-md);
+		transition: transform 0.2s, border-color 0.2s;
+	}
+
+	.reco-item:hover {
+		transform: translateX(4px);
+		border-color: var(--accent-fg);
+	}
+
+	.reco-rank {
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: var(--fg-subtle);
+		width: 1.5rem;
+	}
+
+	.reco-info {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.reco-id {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--fg-default);
+	}
+
+	.reco-summary {
+		font-size: 0.7rem;
+		color: var(--fg-muted);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.reco-score {
+		font-weight: 700;
+		font-size: 0.9rem;
+		white-space: nowrap;
+	}
+
+	.reco-score.success { color: var(--success-fg); }
+	.reco-score.danger { color: var(--danger-fg); }
+
+	.footer-note {
+		margin-top: 2rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--border-muted);
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.75rem;
+		color: var(--fg-muted);
+	}
+
+	.empty-state {
+		text-align: center;
+		padding: 2rem;
+		color: var(--fg-muted);
+		font-size: 0.875rem;
+	}
+
 	.animate-spin {
 		animation: spin 1s linear infinite;
 	}
+
 	@keyframes spin {
 		from { transform: rotate(0deg); }
 		to { transform: rotate(360deg); }

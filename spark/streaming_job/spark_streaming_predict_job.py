@@ -10,7 +10,7 @@ import os
 
 import pymongo
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, udf, from_unixtime, from_json
+from pyspark.sql.functions import col, udf, from_unixtime, from_json, trim
 from pyspark.sql.types import ArrayType, StringType, StructType, StructField
 from pyspark.ml import Transformer
 from pyspark.ml.param.shared import Param, Params
@@ -273,6 +273,8 @@ parsed = (
     raw_stream
     .select(from_json(col("value").cast("string"), json_schema).alias("d"))
     .select("d.*")
+    .filter(col("Text").isNotNull())
+    .filter(trim(col("Text")) != "")
 )
 
 
@@ -351,7 +353,7 @@ query = (
     .foreachBatch(write_to_mongo)
     .outputMode("append")
     .trigger(processingTime="5 seconds")
-    .option("checkpointLocation", "/tmp/spark-checkpoints/reviews-stream")
+    .option("checkpointLocation", "/opt/spark/work-dir/data/checkpoints/reviews-stream")
     .start()
 )
 

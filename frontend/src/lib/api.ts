@@ -1,4 +1,4 @@
-import { PUBLIC_API_BASE_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 export type StatsResponse = {
     total: number;
@@ -138,7 +138,7 @@ function normalizeBase(raw: string): string {
     return trimmed.replace(/\/+$/, "");
 }
 
-export const API_BASE = normalizeBase(PUBLIC_API_BASE_URL || DEFAULT_BASE);
+export const API_BASE = normalizeBase(env.PUBLIC_API_BASE_URL || DEFAULT_BASE);
 
 async function apiFetch<T>(path: string): Promise<T> {
     const base = API_BASE.startsWith("/")
