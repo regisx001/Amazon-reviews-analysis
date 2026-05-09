@@ -32,6 +32,7 @@ def train_model_pipeline():
         application="/opt/airflow/spark/preprocessing_job/spark_preprocessing_job.py",
         name="airflow-spark-preprocessing",
         verbose=True,
+        
     )
 
     # 2. Training Job

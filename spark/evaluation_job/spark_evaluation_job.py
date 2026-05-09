@@ -23,10 +23,11 @@ from pyspark.sql.functions import col
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 DATA_DIR    = "/opt/spark/work-dir/data"
-TEST_FEAT   = os.path.join(DATA_DIR, "test_feat")
-MODEL_DIR   = os.path.join(DATA_DIR, "models", "best_lr")
-META_PATH   = os.path.join(DATA_DIR, "models", "training_meta.json")
-INSIGHTS    = os.path.join(DATA_DIR, "model_insights.json")
+OUTPUT_DIR  = os.path.join(DATA_DIR, "output")
+TEST_FEAT   = os.path.join(OUTPUT_DIR, "test_feat")
+MODEL_DIR   = os.path.join(OUTPUT_DIR, "models", "best_lr")
+META_PATH   = os.path.join(OUTPUT_DIR, "models", "training_meta.json")
+INSIGHTS    = os.path.join(OUTPUT_DIR, "model_insights.json")
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Spark session ─────────────────────────────────────────────────────────────

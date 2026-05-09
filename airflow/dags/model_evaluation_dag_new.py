@@ -171,7 +171,7 @@ def model_evaluation():
         )
 
         metrics_path = os.getenv(
-            "MODEL_INSIGHTS_PATH", "/opt/airflow/data/model_insights.json"
+            "MODEL_INSIGHTS_PATH", "/opt/airflow/data/output/model_insights.json"
         )
 
         errors = []

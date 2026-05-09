@@ -29,17 +29,19 @@ from pyspark.sql.types import ArrayType, StringType
 
 # ---------- CONFIG ----------
 DATA_DIR    = "/opt/spark/work-dir/data"
+OUTPUT_DIR  = os.path.join(DATA_DIR, "output")
 INPUT_FILE  = os.path.join(DATA_DIR, "reviews.csv")
-TRAIN_DIR   = os.path.join(DATA_DIR, "train")
-VAL_DIR     = os.path.join(DATA_DIR, "val")
-TEST_DIR    = os.path.join(DATA_DIR, "test")
 
-TRAIN_FEAT  = os.path.join(DATA_DIR, "train_feat")
-VAL_FEAT    = os.path.join(DATA_DIR, "val_feat")
-TEST_FEAT   = os.path.join(DATA_DIR, "test_feat")
+TRAIN_DIR   = os.path.join(OUTPUT_DIR, "train")
+VAL_DIR     = os.path.join(OUTPUT_DIR, "val")
+TEST_DIR    = os.path.join(OUTPUT_DIR, "test")
 
-HASHING_DIR = os.path.join(DATA_DIR, "models", "hashing_tf")
-IDF_DIR     = os.path.join(DATA_DIR, "models", "idf")
+TRAIN_FEAT  = os.path.join(OUTPUT_DIR, "train_feat")
+VAL_FEAT    = os.path.join(OUTPUT_DIR, "val_feat")
+TEST_FEAT   = os.path.join(OUTPUT_DIR, "test_feat")
+
+HASHING_DIR = os.path.join(OUTPUT_DIR, "models", "hashing_tf")
+IDF_DIR     = os.path.join(OUTPUT_DIR, "models", "idf")
 
 RANDOM_SEED  = 42
 NUM_FEATURES = 100_000
@@ -55,6 +57,12 @@ NEGATION_WORDS = {
     "nowhere", "hardly", "barely", "scarcely",
 }
 # ----------------------------
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+try:
+    os.chmod(OUTPUT_DIR, 0o777)
+except Exception as e:
+    print(f"Warning: could not chmod {OUTPUT_DIR}: {e}")
 
 spark = SparkSession.builder \
     .appName("Preprocessing-NLP-Pipeline") \
@@ -226,7 +234,7 @@ test_feat = preprocessor.transform(test_prep).select(KEEP)
 test_feat.write.parquet(TEST_FEAT, mode="overwrite")
 
 # 6. Save HashingTF and IDF models
-os.makedirs(os.path.join(DATA_DIR, "models"), exist_ok=True)
+os.makedirs(os.path.join(OUTPUT_DIR, "models"), exist_ok=True)
 fitted_hashing_tf = preprocessor.stages[5]
 fitted_idf        = preprocessor.stages[6]
 fitted_hashing_tf.write().overwrite().save(HASHING_DIR)

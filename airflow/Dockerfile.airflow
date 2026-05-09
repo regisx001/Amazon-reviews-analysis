@@ -22,7 +22,7 @@ RUN mkdir -p /opt/airflow/logs/scheduler \
 USER airflow
 
 # Install providers + project dependencies
-RUN pip install --no-cache-dir \
+RUN pip3 install --no-cache-dir \
     apache-airflow-providers-apache-spark==4.9.0 \
     apache-airflow-providers-mongo==4.2.0 \
     kafka-python==2.0.2 \
