@@ -77,6 +77,11 @@ services:
       - MONGODB_DATABASE=${MONGODB_DATABASE}
     volumes:
       - mongodb_data:/bitnami/mongodb
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - amazon_reviews_network
 
@@ -110,6 +115,11 @@ services:
     volumes:
       - zookeeper_data:/var/lib/zookeeper/data
       - zookeeper_log:/var/lib/zookeeper/log
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "2181" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - amazon_reviews_network
 
@@ -131,9 +141,15 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     volumes:
       - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
     networks:
       - amazon_reviews_network
   kafka-ui:
@@ -226,13 +242,17 @@ services:
       - streaming
     env_file: *default_env
     depends_on:
-      - spark-master
-      - kafka
-      - mongodb
+      spark-master:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
     networks:
       - amazon_reviews_network
     volumes:
-      - ./data:/opt/spark/work-dir/data # may be needed if model saved here later
+      - ./data:/opt/spark/work-dir/data
+      - spark_checkpoints:/tmp/spark-checkpoints
     restart: unless-stopped
   # ── Airflow Database ──────────────────────────────────────────
   airflow:
@@ -255,6 +275,12 @@ services:
       MONGODB_DATABASE: ${MONGODB_DATABASE}
       MONGODB_ROOT_USER: ${MONGODB_ROOT_USER}
       MONGODB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      # Collections
+      MONGO_COLLECTION_PRODUCT_SCORING: agg_product_scoring
+      MONGO_COLLECTION_BUZZ_ALERTS: buzz_alerts
+      MONGO_COLLECTION_DAILY_DIGEST: daily_digest
+      MONGO_COLLECTION_QUALITY_AUDIT: quality_audit
+      MONGO_COLLECTION_RECOMMENDATIONS: product_rankings
     command: standalone
     ports:
       - "8085:8080"
@@ -268,40 +294,43 @@ services:
     depends_on:
       - kafka
       - mongodb
-  # backend:
-  #     build:
-  #         context: ./api
-  #         dockerfile: Dockerfile
-  #     container_name: backend-api
-  #     ports:
-  #         - "8000:8000"
-  #     env_file: *default_env
-  #     environment:
-  #         - MONGODB_HOST=mongodb
-  #     depends_on:
-  #         - mongodb
-  #     networks:
-  #         - amazon_reviews_network
+  backend:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: backend-api
+    ports:
+      - "8000:8000"
+    env_file: *default_env
+    environment:
+      - MONGODB_HOST=mongodb
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - amazon_reviews_network
 
-  # frontend:
-  #     build:
-  #         context: ./frontend
-  #         dockerfile: Dockerfile
-  #     container_name: frontend-dashboard
-  #     ports:
-  #         - "5173:3000"
-  #     environment:
-  #         - PUBLIC_API_BASE_URL=http://localhost:8000
-  #     depends_on:
-  #         - backend
-  #     networks:
-  #         - amazon_reviews_network
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-dashboard
+    ports:
+      - "5173:3000"
+    environment:
+      - PUBLIC_API_BASE_URL=http://localhost:8000
+      - API_INTERNAL_URL=http://backend-api:8000
+    depends_on:
+      - backend
+    networks:
+      - amazon_reviews_network
 volumes:
   mongodb_data:
   zookeeper_data:
   zookeeper_log:
   kafka_data:
-  airflow_home: # ← add this
+  airflow_home:
+  spark_checkpoints:
 networks:
   amazon_reviews_network:
     driver: bridge

@@ -3,7 +3,6 @@ FROM oven/bun:latest AS builder
 
 WORKDIR /app
 
-
 # Copy package files
 COPY package.json bun.lock ./
 
@@ -13,7 +12,7 @@ RUN bun install
 # Copy source code
 COPY . .
 
-# Build the app
+# Build the app (SvelteKit with node adapter)
 RUN bun run build
 
 # Runtime stage
@@ -33,5 +32,5 @@ ENV PORT=3000
 # Expose port
 EXPOSE 3000
 
-# # Run the node app (using the node adapter build)
-# CMD ["node", "build"]
+# Start the SvelteKit node server
+CMD ["node", "build"]

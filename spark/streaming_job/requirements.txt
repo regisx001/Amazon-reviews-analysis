@@ -1,5 +1,5 @@
 pymongo
-dotenv
+python-dotenv
 kafka-python
 nltk
 numpy

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .core.config import get_settings
-from .api.v1 import analytics, predictions, stream
+from .api.v1 import analytics, predictions, stream, monitoring
 from .routers import pages # Keeping pages for now, or I can move it too
 
 def create_app() -> FastAPI:
@@ -26,9 +26,10 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=settings.static_dir), name="static")
 
     # API v1 Routers (Mounted under /api for frontend compatibility)
-    app.include_router(analytics.router, prefix="/api")
+    app.include_router(analytics.router,   prefix="/api")
     app.include_router(predictions.router, prefix="/api")
-    app.include_router(stream.router, prefix="/api")
+    app.include_router(stream.router,      prefix="/api")
+    app.include_router(monitoring.router,  prefix="/api")
     
     # Page Routers
     app.include_router(pages.router)

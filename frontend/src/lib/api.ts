@@ -188,3 +188,29 @@ export function fetchAggregationStatus(): Promise<AggregationStatusResponse> {
 export function fetchModelInsights(): Promise<ModelInsightsResponse> {
     return apiFetch<ModelInsightsResponse>("/api/model-insights");
 }
+
+export type RecommendedProduct = {
+    product_id: string;
+    total_reviews: number;
+    positive_count: number;
+    negative_count: number;
+    satisfaction_rate: number;
+    dissatisfaction_rate: number;
+};
+
+export type RecommendationsResponse = {
+    updated_at: string;
+    week_label: string;
+    top_recommended: RecommendedProduct[];
+    quality_alerts: RecommendedProduct[];
+    metadata: {
+        confidence_threshold: number;
+        total_eligible: number;
+    };
+    status?: string;
+    message?: string;
+};
+
+export function fetchRecommendations(): Promise<RecommendationsResponse> {
+    return apiFetch<RecommendationsResponse>("/api/recommendations");
+}

@@ -16,6 +16,10 @@ class Settings:
     mongo_product_scoring_collection: str
     mongo_drift_collection: str
     mongo_model_insights_collection: str
+    mongo_buzz_alerts_collection: str
+    mongo_daily_digest_collection: str
+    mongo_quality_audit_collection: str
+    mongo_recommendations_collection: str
     target_product: str
     frontend_origins: list[str]
     static_dir: str
@@ -58,6 +62,18 @@ def get_settings() -> Settings:
         ),
         mongo_model_insights_collection=os.getenv(
             "MONGO_COLLECTION_MODEL_INSIGHTS", "model_insights"
+        ),
+        mongo_buzz_alerts_collection=os.getenv(
+            "MONGO_COLLECTION_BUZZ_ALERTS", "buzz_alerts"
+        ),
+        mongo_daily_digest_collection=os.getenv(
+            "MONGO_COLLECTION_DAILY_DIGEST", "daily_digest"
+        ),
+        mongo_quality_audit_collection=os.getenv(
+            "MONGO_COLLECTION_QUALITY_AUDIT", "quality_audit"
+        ),
+        mongo_recommendations_collection=os.getenv(
+            "MONGO_COLLECTION_RECOMMENDATIONS", "product_rankings"
         ),
         target_product=os.getenv("TARGET_PRODUCT", "B001E4KFG0"),
         frontend_origins=frontend_origins,

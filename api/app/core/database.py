@@ -37,3 +37,23 @@ def get_drift_status_collection():
 def get_model_insights_collection():
     settings = get_settings()
     return get_client()[settings.mongo_db][settings.mongo_model_insights_collection]
+
+
+def get_buzz_alerts_collection():
+    settings = get_settings()
+    return get_client()[settings.mongo_db][settings.mongo_buzz_alerts_collection]
+
+
+def get_daily_digest_collection():
+    settings = get_settings()
+    return get_client()[settings.mongo_db][settings.mongo_daily_digest_collection]
+
+
+def get_quality_audit_collection():
+    settings = get_settings()
+    return get_client()[settings.mongo_db][settings.mongo_quality_audit_collection]
+
+
+def get_recommendations_collection():
+    settings = get_settings()
+    return get_client()[settings.mongo_db][settings.mongo_recommendations_collection]

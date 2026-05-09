@@ -306,6 +306,8 @@ predictions_df = (
     predictions_df
     .withColumn("PredictedSentiment", label_udf(col("prediction")))
     .withColumn("ProcessingTime",     from_unixtime(col("Time").cast("long")))
+    .withColumn("Score",              col("Score").cast("double"))
+    .withColumn("Time",               col("Time").cast("long"))
     .select(
         "Id", "ProductId", "UserId", "ProfileName",
         "Score", "Time", "ProcessingTime",

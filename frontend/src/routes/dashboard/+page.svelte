@@ -235,6 +235,10 @@
 			>
 				Last aggregation: {formatTimestamp(aggregationStatus?.last_aggregated_at)}
 			</span>
+			<a href="/recommendations" class="btn" style="background: var(--accent-fg); color: white; border: none;">
+				<TrendingUp size={14} style="margin-right: 0.5rem;" />
+				IA Recommendations
+			</a>
 			<button class="btn" onclick={loadData}>
 				<RefreshCw size={14} class={loading ? 'animate-spin' : ''} style="margin-right: 0.5rem;" />
 				Sync
