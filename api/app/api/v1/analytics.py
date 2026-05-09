@@ -21,21 +21,23 @@ router = APIRouter(tags=["Analytics"])
 
 
 @router.get("/stats", response_model=SentimentStats)
-async def get_stats(
-    agg_col=Depends(get_monthly_sentiments_collection),
-    col=Depends(get_collection),
-):
-    stats = AnalyticsService.get_overall_stats_from_monthly(agg_col)
-    return stats if stats.total > 0 else AnalyticsService.get_overall_stats(col)
+async def get_stats(col=Depends(get_collection)):
+    return AnalyticsService.get_overall_stats(col)
+
+
+@router.get("/stats/aggregated", response_model=SentimentStats)
+async def get_stats_aggregated(agg_col=Depends(get_monthly_sentiments_collection)):
+    return AnalyticsService.get_overall_stats_from_monthly(agg_col)
 
 
 @router.get("/predictions-by-date", response_model=TrendData)
-async def get_trend(
-    agg_col=Depends(get_monthly_sentiments_collection),
-    col=Depends(get_collection),
-):
-    trend = AnalyticsService.get_predictions_trend_from_monthly(agg_col)
-    return trend if trend.labels else AnalyticsService.get_predictions_trend(col)
+async def get_trend(col=Depends(get_collection)):
+    return AnalyticsService.get_predictions_trend(col)
+
+
+@router.get("/predictions-by-date/aggregated", response_model=TrendData)
+async def get_trend_aggregated(agg_col=Depends(get_monthly_sentiments_collection)):
+    return AnalyticsService.get_predictions_trend_from_monthly(agg_col)
 
 
 @router.get("/top-products", response_model=TopProduct)

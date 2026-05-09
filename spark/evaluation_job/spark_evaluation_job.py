@@ -23,10 +23,11 @@ from pyspark.sql.functions import col
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 DATA_DIR    = "/opt/spark/work-dir/data"
-TEST_FEAT   = os.path.join(DATA_DIR, "test_feat")
-MODEL_DIR   = os.path.join(DATA_DIR, "models", "best_lr")
-META_PATH   = os.path.join(DATA_DIR, "models", "training_meta.json")
-INSIGHTS    = os.path.join(DATA_DIR, "model_insights.json")
+OUTPUT_DIR  = os.path.join(DATA_DIR, "output")
+TEST_FEAT   = os.path.join(OUTPUT_DIR, "test_feat")
+MODEL_DIR   = os.path.join(OUTPUT_DIR, "models", "best_lr")
+META_PATH   = os.path.join(OUTPUT_DIR, "models", "training_meta.json")
+INSIGHTS    = os.path.join(OUTPUT_DIR, "model_insights.json")
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Spark session ─────────────────────────────────────────────────────────────
@@ -34,6 +35,7 @@ spark = (
     SparkSession.builder
     .appName("AmazonReviews-ModelEvaluation")
     .config("spark.sql.shuffle.partitions", "8")
+    .config("spark.hadoop.fs.permissions.umask-mode", "000")
     .getOrCreate()
 )
 spark.sparkContext.setLogLevel("WARN")
@@ -126,6 +128,10 @@ insights = {
 }
 
 os.makedirs(os.path.dirname(INSIGHTS), exist_ok=True)
+try:
+    os.chmod(os.path.dirname(INSIGHTS), 0o777)
+except:
+    pass
 with open(INSIGHTS, "w") as f:
     json.dump(insights, f, indent=4)
 print(f"\n✓ model_insights.json written → {INSIGHTS}")

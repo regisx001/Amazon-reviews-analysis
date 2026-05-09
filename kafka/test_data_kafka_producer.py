@@ -7,7 +7,7 @@ delay between messages to simulate real-time data.
 
 Usage:
 	python kafka/test_data_kafka_producer.py
-	python kafka/test_data_kafka_producer.py --bootstrap localhost:29092 --csv data/test/part-*.csv
+	python kafka/test_data_kafka_producer.py --bootstrap localhost:29092 --csv data/output/test/part-*.csv
 """
 
 import argparse
@@ -22,7 +22,7 @@ from kafka.errors import NoBrokersAvailable
 
 KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "localhost:9094")
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "reviews.raw")
-TEST_CSV = os.getenv("TEST_CSV", "data/test/part-*.csv")
+TEST_CSV = os.getenv("TEST_CSV", "data/output/test/part-*.csv")
 TEST_LIMIT = int(os.getenv("TEST_LIMIT", "0"))
 SEND_DELAY = float(os.getenv("KAFKA_SEND_DELAY", "0.8"))
 

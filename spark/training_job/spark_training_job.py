@@ -16,9 +16,10 @@ from pyspark.sql import SparkSession
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 DATA_DIR    = "/opt/spark/work-dir/data"
-TRAIN_FEAT  = os.path.join(DATA_DIR, "train_feat")
-MODEL_DIR   = os.path.join(DATA_DIR, "models", "best_lr")
-META_PATH   = os.path.join(DATA_DIR, "models", "training_meta.json")
+OUTPUT_DIR  = os.path.join(DATA_DIR, "output")
+TRAIN_FEAT  = os.path.join(OUTPUT_DIR, "train_feat")
+MODEL_DIR   = os.path.join(OUTPUT_DIR, "models", "best_lr")
+META_PATH   = os.path.join(OUTPUT_DIR, "models", "training_meta.json")
 
 NUM_FEATURES = 100_000
 # ─────────────────────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ spark = (
     SparkSession.builder
     .appName("AmazonReviews-BestLR-Training")
     .config("spark.sql.shuffle.partitions", "8")
+    .config("spark.hadoop.fs.permissions.umask-mode", "000")
     .getOrCreate()
 )
 spark.sparkContext.setLogLevel("WARN")
@@ -59,7 +61,11 @@ print(f"✓ Training done in {time.time() - t0:.1f}s")
 
 
 # ── 3. Save model artefacts ───────────────────────────────────────────────────
-os.makedirs(os.path.join(DATA_DIR, "models"), exist_ok=True)
+os.makedirs(os.path.join(OUTPUT_DIR, "models"), exist_ok=True)
+try:
+    os.chmod(os.path.join(OUTPUT_DIR, "models"), 0o777)
+except:
+    pass
 
 lr_model.write().overwrite().save(MODEL_DIR)
 print(f"\n✓ LR model saved → {MODEL_DIR}")

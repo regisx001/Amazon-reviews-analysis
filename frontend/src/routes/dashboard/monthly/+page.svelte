@@ -3,11 +3,20 @@
 	import { browser } from '$app/environment';
 	import {
 		fetchPredictionsByDate,
+		fetchPredictionsByDateAggregated,
 		fetchAggregationStatus,
 		type PredictionsByDateResponse,
 		type AggregationStatusResponse
 	} from '$lib/api';
-	import { RefreshCw, TrendingUp, AlertTriangle, BarChart3, CalendarDays } from 'lucide-svelte';
+	import {
+		RefreshCw,
+		TrendingUp,
+		AlertTriangle,
+		BarChart3,
+		CalendarDays,
+		Activity,
+		History
+	} from 'lucide-svelte';
 
 	type Row = {
 		label: string;
@@ -17,7 +26,10 @@
 		total: number;
 	};
 
-	let trend = $state<PredictionsByDateResponse | null>(null);
+	let activeTab = $state<'live' | 'historical'>('historical'); // Default to historical for this page
+
+	let liveTrend = $state<PredictionsByDateResponse | null>(null);
+	let aggTrend = $state<PredictionsByDateResponse | null>(null);
 	let aggregationStatus = $state<AggregationStatusResponse | null>(null);
 	let loading = $state(true);
 
@@ -27,15 +39,20 @@
 	let barChart: any = null;
 	let lineChart: any = null;
 
+	let currentTrend = $derived(activeTab === 'live' ? liveTrend : aggTrend);
+
 	async function loadData() {
 		loading = true;
 		try {
-			const [trendData, agg] = await Promise.all([
+			const [lt, at, agg] = await Promise.all([
 				fetchPredictionsByDate(),
+				fetchPredictionsByDateAggregated(),
 				fetchAggregationStatus()
 			]);
-			trend = trendData;
+			liveTrend = lt;
+			aggTrend = at;
 			aggregationStatus = agg;
+
 			if (ChartApi) {
 				renderCharts();
 			}
@@ -60,12 +77,19 @@
 		lineChart?.destroy();
 	});
 
+	function switchTab(tab: 'live' | 'historical') {
+		activeTab = tab;
+		setTimeout(() => {
+			if (ChartApi) renderCharts();
+		}, 0);
+	}
+
 	let rows = $derived<Row[]>(
-		trend
-			? trend.labels.map((label, i) => {
-					const positive = Number(trend.positive[i] ?? 0) || 0;
-					const neutral = Number(trend.neutral[i] ?? 0) || 0;
-					const negative = Number(trend.negative[i] ?? 0) || 0;
+		currentTrend
+			? currentTrend.labels.map((label, i) => {
+					const positive = Number(currentTrend.positive[i] ?? 0) || 0;
+					const neutral = Number(currentTrend.neutral[i] ?? 0) || 0;
+					const negative = Number(currentTrend.negative[i] ?? 0) || 0;
 					const total = positive + neutral + negative;
 					return { label, positive, neutral, negative, total };
 				})
@@ -128,12 +152,12 @@
 	}
 
 	function renderCharts() {
-		if (!ChartApi || !trend) return;
+		if (!ChartApi || !currentTrend) return;
 
-		const labels = $state.snapshot(trend.labels);
-		const positive = $state.snapshot(trend.positive);
-		const neutral = $state.snapshot(trend.neutral);
-		const negative = $state.snapshot(trend.negative);
+		const labels = $state.snapshot(currentTrend.labels);
+		const positive = $state.snapshot(currentTrend.positive);
+		const neutral = $state.snapshot(currentTrend.neutral);
+		const negative = $state.snapshot(currentTrend.negative);
 		const totals = labels.map(
 			(_, i) => (positive[i] || 0) + (neutral[i] || 0) + (negative[i] || 0)
 		);
@@ -204,7 +228,7 @@
 		<div>
 			<h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Monthly Aggregation</h1>
 			<p style="color: var(--fg-muted); font-size: 0.875rem;">
-				Monthly sentiment totals built from the aggregation pipeline.
+				Sentiment trends across different time intervals and sources.
 			</p>
 		</div>
 		<div class="flex items-center gap-4">
@@ -218,14 +242,34 @@
 		</div>
 	</div>
 
+	<!-- Tab Switcher -->
+	<div class="tab-switcher">
+		<button
+			class="tab-btn"
+			class:active={activeTab === 'live'}
+			onclick={() => switchTab('live')}
+		>
+			<Activity size={14} />
+			Live Trend (Raw)
+		</button>
+		<button
+			class="tab-btn"
+			class:active={activeTab === 'historical'}
+			onclick={() => switchTab('historical')}
+		>
+			<History size={14} />
+			Aggregated (Pipeline)
+		</button>
+	</div>
+
 	<div class="kpi-grid">
 		<div class="kpi-card">
 			<div class="kpi-label flex items-center gap-2">
-				<BarChart3 size={14} /> Total Aggregated Reviews
+				<BarChart3 size={14} /> Total Reviews
 			</div>
 			<div class="kpi-value">{safeNumber(summary?.total).toLocaleString()}</div>
 			<div class="kpi-trend" style="color: var(--fg-muted)">
-				From {rows.length} monthly buckets
+				{activeTab === 'live' ? 'From live predictions' : `From ${rows.length} monthly buckets`}
 			</div>
 		</div>
 		<div class="kpi-card" style="border-left: 4px solid var(--accent-fg)">
@@ -296,7 +340,7 @@
 					{#if rows.length === 0}
 						<tr>
 							<td colspan="6" style="text-align: center; padding: 2.5rem; color: var(--fg-muted);">
-								{loading ? 'Loading monthly aggregation...' : 'No monthly aggregation data found.'}
+								{loading ? 'Loading...' : 'No data found.'}
 							</td>
 						</tr>
 					{:else}
@@ -347,6 +391,41 @@
 </div>
 
 <style>
+	.tab-switcher {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 1.5rem;
+		padding: 0.25rem;
+		background: var(--canvas-subtle);
+		border-radius: 8px;
+		width: fit-content;
+	}
+
+	.tab-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		border-radius: 6px;
+		border: none;
+		background: transparent;
+		color: var(--fg-muted);
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.tab-btn:hover {
+		color: var(--fg-default);
+	}
+
+	.tab-btn.active {
+		background: var(--canvas-default);
+		color: var(--fg-default);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	}
+
 	.animate-spin {
 		animation: spin 1s linear infinite;
 	}

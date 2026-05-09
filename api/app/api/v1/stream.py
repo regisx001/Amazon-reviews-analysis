@@ -13,15 +13,10 @@ async def stats_generator(agg_col, col):
     """Generates SSE events for global stats every 2 seconds."""
     while True:
         try:
-            stats = AnalyticsService.get_overall_stats_from_monthly(agg_col)
-            if stats.total == 0:
-                stats = AnalyticsService.get_overall_stats(col)
-
-            # We also include trend data to keep charts live
-            trend = AnalyticsService.get_predictions_trend_from_monthly(
-                agg_col)
-            if not trend.labels:
-                trend = AnalyticsService.get_predictions_trend(col)
+            # For live streaming, we always use the raw collection to ensure real-time updates.
+            # This reflects new predictions as soon as they are processed by Spark.
+            stats = AnalyticsService.get_overall_stats(col)
+            trend = AnalyticsService.get_predictions_trend(col)
 
             data = {
                 "stats": stats.dict(),
