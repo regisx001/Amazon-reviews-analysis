@@ -16,9 +16,8 @@ services:
       - SPARK_MASTER_WEBUI_PORT=8080
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     ports:
-      - "8080:8080" # Master UI
-      - "4040:4040" # Master UI
-      - "7077:7077" # Master RPC
+      - "8080:8080" # Master Web UI
+      - "7077:7077" # Master RPC (for worker/driver connection)
     volumes:
       - ./data:/opt/spark/work-dir/data
     networks:
@@ -234,6 +233,8 @@ services:
       - amazon_reviews_network
     volumes:
       - ./data:/opt/spark/work-dir/data # may be needed if model saved here later
+    ports:
+      - "4040:4040" # Spark Application UI (Driver)
     restart: unless-stopped
   # ── Airflow Database ──────────────────────────────────────────
   airflow:

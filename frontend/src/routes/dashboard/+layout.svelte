@@ -57,7 +57,7 @@
 <div class="dashboard-layout">
 	<aside class="sidebar">
 		<div class="sidebar-brand">
-			<Github size={24} />
+			<!-- <Github size={24} /> -->
 			<span>SentimentView</span>
 		</div>
 
