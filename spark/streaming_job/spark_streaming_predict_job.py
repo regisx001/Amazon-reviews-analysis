@@ -269,10 +269,13 @@ raw_stream = (
     .load()
 )
 
+from pyspark.sql.functions import coalesce, lit
+
 parsed = (
     raw_stream
     .select(from_json(col("value").cast("string"), json_schema).alias("d"))
     .select("d.*")
+    .withColumn("Text", coalesce(col("Text"), lit("")))
 )
 
 
